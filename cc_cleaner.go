@@ -51,7 +51,7 @@ func cleanFolder(desc, folder string) task {
 // cleanup orchestrates all cleanup tasks based on the mode (user/full/etc)
 // and optionally a username
 func cleanup(mode string, username ...string) {
-	printInfo(fmt.Sprintf("Starting cleanup in %s mode on %s", mode, goos))
+	printInfo(fmt.Sprintf("Cleanup: (%s mode on %s)", mode, goos))
 	askVerbose()
 	var tasks []task
 	switch mode {
@@ -92,11 +92,11 @@ func selectProfile(username []string) (string, bool) {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Println("Available profiles:")
+		fmt.Println("\n\nAvailable profiles:")
 		for _, p := range profiles {
 			fmt.Printf("  %s\n", p)
 		}
-		fmt.Printf("Input profile name to clean:")
+		fmt.Printf("Input profile name to clean: ")
 		choice, _ := reader.ReadString('\n')
 		choice = strings.TrimSpace(choice)
 		if !contains(profiles, choice) {
@@ -121,7 +121,7 @@ func getProfiles() []string {
 
 	switch goos {
 	case "windows":
-		userBase := os.Getenv("SystemDrive") + `\\Users`
+		userBase := os.Getenv("SystemDrive") + `\Users`
 		files, err = os.ReadDir(userBase)
 	default:
 		files, err = os.ReadDir("/home")
@@ -157,7 +157,7 @@ func contains(list []string, val string) bool {
 func buildUserTasks(goos, profile string) []task {
 	switch goos {
 	case "windows":
-		userPath := os.Getenv("SystemDrive") + `\\Users\\` + profile
+		userPath := os.Getenv("SystemDrive") + `\Users\` + profile
 		return []task{
 			cleanFolder("Windows Explorer Cache", userPath+`\AppData\Local\Microsoft\Windows\Explorer`),
 			cleanFolder("Local Crash Dumps", userPath+`\AppData\Local\CrashDumps`),
@@ -226,13 +226,13 @@ func buildLinuxTasks(mode string) []task {
 			{desc: "Systemd-Tmpfiles", cmd: []string{"systemd-tmpfiles", "--clean"}},
 			{desc: "Apt Cache", cmd: []string{"apt-get", "clean"}},
 			{desc: "Flatpak Cache", cmd: []string{"flatpak", "uninstall", "--unused", "-y"}},
-			{desc: "Pip Cache", cmd: []string{"pip", "cache", "purge"}},
-			{desc: "Npm Cache", cmd: []string{"npm", "cache", "clean", "--force"}},
-			{desc: "Yarn Cache", cmd: []string{"yarn", "cache", "clean"}},
-			{desc: "DNF Cache", cmd: []string{"dnf", "clean", "all"}},
 			{desc: "Pacman Cache", cmd: []string{"pacman", "-Scc", "--noconfirm"}},
 			{desc: "Nix Garbage Collector", cmd: []string{"nix-collect-garbage", "-d"}},
+			{desc: "Yarn Cache", cmd: []string{"yarn", "cache", "clean"}},
+			{desc: "DNF Cache", cmd: []string{"dnf", "clean", "all"}},
+			{desc: "Npm Cache", cmd: []string{"npm", "cache", "clean", "--force"}},
 			{desc: "Composer Cache", cmd: []string{"composer", "clear-cache"}},
+			{desc: "Pip Cache", cmd: []string{"pip", "cache", "purge"}},
 			{desc: "Go Module Cache", cmd: []string{"go", "clean", "-modcache"}},
 			{desc: "Rust Cargo Cache", cmd: []string{"cargo", "clean"}},
 			{desc: "Docker System Prune", cmd: []string{"docker", "system", "prune", "-af"}},
@@ -258,7 +258,8 @@ func askVerbose() {
 		return
 	}
 
-	fmt.Print("Enable verbose logging? (Y = YES, N = NO): ")
+	fmt.Printf("Enable verbose logging?\n")
+	fmt.Printf("%s[Y]es%s/%s[N]o%s: ", GREEN, RC, RED, RC)
 
 	if err := keyboard.Open(); err != nil {
 		panic(err)
@@ -274,19 +275,22 @@ func askVerbose() {
 		switch {
 		case char == 'y' || char == 'Y':
 			verbose = true
-			fmt.Printf("YES\n")
+			fmt.Printf("YES")
 			return
 		case char == 'n' || char == 'N' || key == keyboard.KeyEsc:
 			verbose = false
-			fmt.Printf("NO\n")
+			fmt.Printf("NO")
 			return
+		case key == keyboard.KeyCtrlC:
+			// Exit on CTRL+C
+			cc_exit()
 		}
 	}
 }
 
 // previewTasks prints all tasks before execution
 func previewTasks(tasks []task) {
-	fmt.Printf("\n")
+	fmt.Printf("\n\n")
 	printInfo("The following cleanup tasks will be executed:")
 
 	for _, t := range tasks {
@@ -316,8 +320,8 @@ func previewTasks(tasks []task) {
 
 // runTasks executes all cleanup tasks with spinner and logging
 func runTasks(tasks []task) {
-	fmt.Printf("%s#############################################%s\n", RED, RC)
-	printInfo("*** CrunchyCleaner Cleanup STARTED ***\n")
+	fmt.Printf("\n%s#############################################%s\n", RED, RC)
+	printInfo("*** CrunchyCleaner Cleanup STARTED ***")
 	time.Sleep(2 * time.Second)
 
 	startFree := getFreeMB()
