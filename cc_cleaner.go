@@ -259,7 +259,7 @@ func askVerbose() {
 	}
 
 	fmt.Printf("Enable verbose logging?\n")
-	fmt.Printf("  %s[Y]es%s/%s[N]o%s: ", GREEN, RC, RED, RC)
+	fmt.Printf("%s[Y]es%s/%s[N]o%s: ", GREEN, RC, RED, RC)
 
 	if err := keyboard.Open(); err != nil {
 		panic(err)
@@ -281,13 +281,16 @@ func askVerbose() {
 			verbose = false
 			fmt.Printf("NO")
 			return
+		case key == keyboard.KeyCtrlC:
+			// Exit on CTRL+C
+			cc_exit()
 		}
 	}
 }
 
 // previewTasks prints all tasks before execution
 func previewTasks(tasks []task) {
-	fmt.Printf("\n")
+	fmt.Printf("\n\n")
 	printInfo("The following cleanup tasks will be executed:")
 
 	for _, t := range tasks {

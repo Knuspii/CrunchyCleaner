@@ -389,6 +389,10 @@ func handleMenu() {
 				idx++
 			}
 
+		case key == keyboard.KeyCtrlC:
+			// Exit on CTRL+C
+			cc_exit()
+
 		case key == keyboard.KeyEnter:
 			// Perform action based on selected menu item
 			switch menuItems[idx].Name {

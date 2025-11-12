@@ -64,6 +64,10 @@ func pause() {
 		if key == keyboard.KeyEnter {
 			break
 		}
+		// If CTRL+C is pressed, exit the program
+		if key == keyboard.KeyCtrlC {
+			cc_exit()
+		}
 	}
 
 	// Move the cursor up one line
