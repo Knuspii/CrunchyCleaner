@@ -25,21 +25,6 @@ It helps you clear out caches, temp files, logs, and more — without confusing 
   - Full Clean (deep cleanup of system junk)
   - User Clean (profile-specific cleanup)
 
-## 📥 Download and install as command:
-- **You need root/admin privileges!**
-- Open your terminal and input this command, based on your operating system.
-
-- **Linux:**
-```
-sudo curl -L https://github.com/Knuspii/crunchycleaner/releases/latest/download/crunchycleaner -o /usr/local/bin/crunchycleaner && sudo chmod +x /usr/local/bin/crunchycleaner && echo "CrunchyCleaner installed at /usr/local/bin/crunchycleaner. Restart terminal to use 'crunchycleaner'"
-```
-- **Windows (Powershell as admin):**
-```
-$ip="C:\Program Files\CrunchyCleaner"; if(-not (Test-Path $ip)){New-Item -ItemType Directory -Path $ip -Force | Out-Null}; $ep=Join-Path $ip "crunchycleaner.exe"; Invoke-WebRequest "https://github.com/Knuspii/crunchycleaner/releases/latest/download/crunchycleaner.exe" -OutFile $ep -UseBasicParsing; $envp=[System.Environment]::GetEnvironmentVariable("Path",[System.EnvironmentVariableTarget]::Machine); if($envp -notlike "*$ip*"){[System.Environment]::SetEnvironmentVariable("Path","$envp;$ip",[System.EnvironmentVariableTarget]::Machine)}; Write-Host "CrunchyCleaner installed at $ep. Restart terminal to use 'crunchycleaner'"
-```
-- **Now restart your terminal or reboot.**
-- After that just type "crunchycleaner --version" into your terminal and it should output the current version.
-
 ## ⚙️ Start options:
 ```
 Usage:
