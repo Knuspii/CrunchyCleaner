@@ -8,6 +8,10 @@ if errorlevel 1 (
 )
 echo Modules updated successfully.
 
+echo Tidying up Go modules...
+go mod tidy
+echo Modules tidied successfully.
+
 echo Formatting Go source files...
 gofmt -s -w ..\.
 echo Formatting done.
@@ -44,10 +48,6 @@ if errorlevel 1 (
     exit /b 1
 )
 echo Linux ARM64 build succeeded.
-
-echo Tidying up Go modules...
-go mod tidy
-echo Modules tidied successfully.
 
 echo All builds finished successfully.
 timeout /t 3
