@@ -9,17 +9,12 @@
 
 ![Preview](assets/preview.png)
 
-### ✨ A lightweight, software cache cleanup tool
-CrunchyCleaner is made to be simple, easy and *very crunchy indeed!*\
-It helps you clear out caches from various software — without confusing menus and 100+ options.
-
-[![Release](https://img.shields.io/github/v/release/Knuspii/crunchycleaner?color=blue)](https://github.com/knuspii/crunchycleaner/releases)
-# 📥 [[Download here]](https://github.com/Knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
-
-## 🔑 Key features:
+### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache) cleanup tool
 - 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
 - ⚡ **Lightweight**: Single binary, no dependencies (just download and run it)
 - 🎨 **TUI (Text-UI)**: Simple, minimalist interface, no confusing menus
+
+# 📥 [[Download here]](https://github.com/Knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
 > [!WARNING]
 > You use this tool at your own risk!
