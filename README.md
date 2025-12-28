@@ -9,7 +9,7 @@
 
 ![Preview](assets/preview.png)
 
-### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache) cleanup tool
+### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache) cleanup tool for Windows & Linux.
 - 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
 - ⚡ **Lightweight**: Single binary, no dependencies (just download and run it)
 - 📲 **TUI (Text-UI)**: Simple, minimalist interface, no confusing menus
