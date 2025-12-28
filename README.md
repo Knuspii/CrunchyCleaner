@@ -5,7 +5,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/knuspii/crunchycleaner)](https://github.com/knuspii/crunchycleaner/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social)](https://github.com/knuspii/crunchycleaner/stargazers)
 
-<h1>CrunchyCleaner 🧹</h1>
+<h1>CrunchyCleaner 💾🧹</h1>
 
 ![Preview](assets/preview.png)
 
