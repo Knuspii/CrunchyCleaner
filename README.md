@@ -7,7 +7,7 @@
 
 <h1>CrunchyCleaner 💾🧹</h1>
 
-![Preview](assets/preview.png)
+<img src="assets/preview.png" width="400" height="400" alt="Preview">
 
 ### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache) cleanup tool for Windows & Linux.
 - 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
