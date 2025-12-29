@@ -9,11 +9,11 @@
 
 <img src="assets/preview.png" width="400" height="400" alt="Preview">
 
-### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache) cleanup tool for Windows & Linux.
+### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
 - 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
 - ⚡ **Lightweight**: Single binary, no dependencies (just download and run it)
 - 📲 **TUI (Text-UI)**: Simple, minimalist interface, no confusing menus
-- 🧐 **Should be safe**: because it only deletes cache files
+- 🧐 **Should be safe**: because it only deletes [cache](https://wikipedia.org/wiki/Cache_(computing)) files
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
@@ -29,6 +29,30 @@
 - Pip Cache
 - Go Build Cache
 - NPM Cache
+
+## ⚙️ Start options:
+```
+Usage:
+  crunchycleaner [option]
+
+Options:
+  -dry-run
+        Simulation mode: identifies files without deleting them
+  -no-init
+        Skip terminal resizing and environment initialization
+  -version
+        Display version information
+```
+
+## Q&A
+**Q:** Will this break my system?\
+**A:** No.\
+\
+**Q:** What does it actually delete?\
+**A:** Only cache files in your profile directory.\
+\
+**Q:** Why another cleaner?\
+**A:** Because this one is easy, simple, small and lightweight.
 
 > [!WARNING]
 > You use this tool at your own risk!
