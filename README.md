@@ -13,6 +13,7 @@
 - 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
 - ⚡ **Lightweight**: Single binary, no dependencies (just download and run it)
 - 📲 **TUI (Text-UI)**: Simple, minimalist interface, no confusing menus
+- 🧐 **Should be safe**: because it only deletes cache files
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
@@ -20,12 +21,14 @@
 - Firefox
 - Google Chrome
 - Microsoft Edge
+- Thunderbird
 - Steam
 - Discord
 - Spotify
 - Visual Studio Code
 - Pip Cache
 - Go Build Cache
+- NPM Cache
 
 > [!WARNING]
 > You use this tool at your own risk!
