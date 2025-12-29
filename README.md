@@ -18,6 +18,7 @@
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
 ## Supported Software List:
+- Thumbnail Cache
 - Firefox
 - Google Chrome
 - Microsoft Edge
