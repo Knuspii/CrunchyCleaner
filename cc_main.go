@@ -10,6 +10,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -44,7 +45,7 @@ var (
 	// CLI Flags
 	Flagversion = flag.Bool("version", false, "Display version information")
 	Flagnoinit  = flag.Bool("no-init", false, "Skip terminal resizing and environment initialization")
-	Flagdryrun  = flag.Bool("dry-run", false, "Simulation mode: identifies files without deleting them")
+	Flagdryrun  = flag.Bool("dry-run", false, "Simulation mode without deleting files (for testing)")
 )
 
 // Program represents a target application and its associated cache directories
@@ -77,7 +78,7 @@ func cc_exit() {
 
 func pause() {
 	fmt.Printf("\nPress [ENTER] to continue...")
-	fmt.Scanln()
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
 // line draws a formatted horizontal separator
@@ -117,10 +118,33 @@ func runCommand(cmd []string) (string, error) {
 	return out, nil
 }
 
+// isSafePath checks whether a given path is safe to delete.
+// It prevents dangerous operations like deleting root directories
+// or very short paths that could wipe critical system locations.
+func isSafePath(p string) bool {
+	p = filepath.Clean(p)
+
+	if runtime.GOOS == "windows" {
+		// Block deletion of drive roots like "C:\"
+		if strings.HasSuffix(p, ":\\") {
+			return false
+		}
+	}
+
+	// Block deletion of Unix root directory "/"
+	if p == "/" {
+		return false
+	}
+
+	// Additional safety net:
+	// Very short paths are likely system-critical (e.g. "C:\", "/usr", "/bin")
+	// Require a minimum path length to reduce risk of catastrophic deletes
+	return len(p) > 10
+}
+
 // initApp prepares the terminal environment (Title, Resize, User Info)
 func initApp() {
-	clearScreen()
-	fmt.Printf("%sInitializing CrunchyCleaner %s...%s\n", YELLOW, CC_VERSION, RC)
+	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
 
 	// Fetching the current system user for the display
 	usr, err := user.Current()
@@ -255,7 +279,8 @@ func getPrograms() []Program {
 		appData := os.Getenv("APPDATA")
 		localAppData := os.Getenv("LOCALAPPDATA")
 		return []Program{
-			{"Windows Thumbnails", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
+			{"Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
+			{"Thumbnail Cache", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
 			{"Firefox Cache", []string{
 				filepath.Join(localAppData, "Mozilla/Firefox/Profiles/*/cache2"),
 				filepath.Join(localAppData, "Mozilla/Firefox/Profiles/*/jumpListCache"),
@@ -332,16 +357,19 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 		fmt.Printf("Software found: [%d]\n", len(existing))
 	}
 
+	// Render each detected program entry
 	for i := range existing {
 		cursor := "    "
+		// Highlight the currently selected entry
 		if i == idx {
 			cursor = YELLOW + "  >_" + RC
 		}
+		// Checkbox indicator for selection state
 		check := "[ ]"
 		if existing[i].Checked {
 			check = "[" + GREEN + "X" + RC + "]"
 		}
-		// Clear line and print entry
+		// Clear the current line and print the menu entry
 		fmt.Printf("\r\033[K%s%s %s\n", cursor, check, existing[i].Name)
 	}
 }
@@ -355,6 +383,8 @@ func handleMenu() {
 	done := make(chan bool)
 	go spinner("Scanning filesystem", done)
 
+	// Retrieve all known programs and filter only those
+	// whose cache paths actually exist on the system
 	allPrograms := getPrograms()
 	existing := []Program{}
 	for _, p := range allPrograms {
@@ -362,6 +392,7 @@ func handleMenu() {
 		for _, path := range p.Paths {
 			// Check if any file/folder matches the glob pattern
 			matches, _ := filepath.Glob(expandHome(path))
+			// If at least one path exists, mark program as found
 			if len(matches) > 0 {
 				found = true
 				break
@@ -374,15 +405,14 @@ func handleMenu() {
 	time.Sleep(1 * time.Second)
 	done <- true
 
-	// Clean up the scanning line
-	fmt.Print("\033[A\033[K")
-
+	// Abort if nothing was detected
 	if len(existing) == 0 {
-		fmt.Printf("\nNo cache directories found on your system.\n")
+		fmt.Printf("No cache directories found on your system.\n")
 		pause()
 		return
 	}
 
+	// Enable raw keyboard input mode
 	if err := keyboard.Open(); err != nil {
 		panic(err)
 	}
@@ -390,7 +420,6 @@ func handleMenu() {
 
 	idx := 0
 	renderMenu(existing, idx, true)
-
 	// Main Input Loop
 	for {
 		char, key, err := keyboard.GetKey()
@@ -435,8 +464,9 @@ func handleMenu() {
 			cc_exit()
 		}
 
+		// Redraw menu entries in-place if state changed
 		if updated {
-			// ANSI Escape: Move cursor up by N lines to redraw menu in-place
+			// Move cursor up to the start of the menu list
 			fmt.Printf("\033[%dA", len(existing))
 			renderMenu(existing, idx, false)
 		}
@@ -480,10 +510,14 @@ func runCleanup(programs []Program) {
 					// Only log the target in simulation mode
 					logInfo(fmt.Sprintf("[SIMULATE] Would delete: %s", m))
 				} else {
-					// Physical deletion
+					if !isSafePath(m) {
+						logWarn("Skipped unsafe path: " + m)
+						continue
+					}
+
 					err := os.RemoveAll(m)
 					if err != nil {
-						logWarn("Error cleaning " + p.Name + ": " + err.Error())
+						logWarn("Warning cleaning " + p.Name + ": " + err.Error())
 					}
 				}
 			}
@@ -494,6 +528,7 @@ func runCleanup(programs []Program) {
 		}
 	}
 	done <- true
+	fmt.Print("\r\033[K")
 
 	if *Flagdryrun {
 		logOK("Simulation finished. No files were removed.")
@@ -516,14 +551,15 @@ func runCleanup(programs []Program) {
 	line()
 	label := "Cleaned"
 	if *Flagdryrun {
-		label = "Space to be recovered"
+		label = "NOTHING CLEANED (Dry Run)"
 	}
 
 	fmt.Printf(" %s: %s%.2f MB%s\n", label, GREEN, totalCleanedMB, RC)
 	line()
 
 	fmt.Printf("\nPress [ENTER] to exit...")
-	fmt.Scanln()
+	keyboard.Close()
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	cc_exit()
 }
 
