@@ -10,10 +10,10 @@
 <img src="assets/preview.png" width="400" height="400" alt="Preview">
 
 ### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
-- 💻 **Cross-Platform**: Works on both **Windows** and **Linux**
-- ⚡ **Lightweight**: Single binary, no dependencies (just download and run it)
-- 📲 **TUI (Text-UI)**: Simple, minimalist interface, no confusing menus
-- 🧐 **Should be safe**: because it only deletes [cache](https://wikipedia.org/wiki/Cache_(computing)) files
+- 💻 **Cross-Platform:** Works on both **Windows** and **Linux**
+- ⚡ **Lightweight:** Single binary, no dependencies (just download and run it)
+- 📲 **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
+- 🧐 **Should be safe:** because it only deletes [cache](https://wikipedia.org/wiki/Cache_(computing)) files
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
