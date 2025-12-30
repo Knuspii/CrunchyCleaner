@@ -22,7 +22,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o crunchycleaner-arm64 .
 
       - name: Run CrunchyCleaner Linux
-        run: ./crunchycleaner -v
+        run: ./crunchycleaner -version
 
   build-windows:
     runs-on: windows-latest
@@ -36,4 +36,4 @@ jobs:
         run: go build -o crunchycleaner.exe .
 
       - name: Run CrunchyCleaner Windows
-        run: ./crunchycleaner.exe -v
+        run: ./crunchycleaner.exe -version
