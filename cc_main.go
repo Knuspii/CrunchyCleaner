@@ -258,7 +258,7 @@ func showBanner() {
  |  |______________|  | |#######|
  |                    | |||||||||
  |     ____________   |
- |    | __      |  |  | %sCrunchyCleaner - Clear Software Cache%s
+ |    | __      |  |  | %sCrunchyCleaner%s
  |    ||  |     |  |  | Made by: Knuspii, (M)
  |    ||__|     |  |  | Version: %s
  |____|_________|__|__| Disk-Space: %s / %s%s
