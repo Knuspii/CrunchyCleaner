@@ -137,9 +137,9 @@ func isSafePath(p string) bool {
 	}
 
 	// Additional safety net:
-	// Very short paths are likely system-critical (e.g. "C:\", "/usr", "/bin")
+	// Very short paths are likely system-critical
 	// Require a minimum path length to reduce risk of catastrophic deletes
-	return len(p) > 10
+	return len(p) > 3
 }
 
 // initApp prepares the terminal environment (Title, Resize, User Info)
@@ -283,7 +283,13 @@ func getPrograms() []Program {
 		localAppData := os.Getenv("LOCALAPPDATA")
 		programFilesX86 := os.Getenv("ProgramFiles(x86)")
 		programFiles := os.Getenv("ProgramFiles")
+		winDir := os.Getenv("WINDIR")
 		return []Program{
+			{"System Logs (Admin)", []string{
+				filepath.Join(winDir, "Panther"), // Setup Logs
+				filepath.Join(winDir, "Logs"),
+			}, false},
+			{"Windows Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
 			{"Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
 			{"Thumbnail Cache", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
 			{"Firefox Cache", []string{
@@ -351,6 +357,7 @@ func getPrograms() []Program {
 		// Linux
 		home, _ := os.UserHomeDir()
 		return []Program{
+			{"System Logs (Root)", []string{"/var/log"}, false},
 			{"Temp Folder", []string{"/tmp", "/var/tmp"}, false},
 			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
 			{"Firefox Cache", []string{filepath.Join(home, ".cache/mozilla/firefox/*/cache2")}, false},
@@ -574,20 +581,49 @@ func runCleanup(programs []Program) {
 		count++
 
 		for _, path := range p.Paths {
+			// Expand wildcards (e.g., /Profiles/*/cache2)
 			matches, _ := filepath.Glob(expandHome(path))
+
 			for _, m := range matches {
 				if *Flagdryrun {
-					// Only log the target in simulation mode
-					logInfo(fmt.Sprintf("[SIMULATE] Would delete: %s", m))
+					logInfo(fmt.Sprintf("[SIMULATE] Would empty directory: %s", m))
 				} else {
 					if !isSafePath(m) {
 						logWarn("Skipped unsafe path: " + m)
 						continue
 					}
 
-					err := os.RemoveAll(m)
+					// Get file information to check if it's a directory
+					info, err := os.Stat(m)
 					if err != nil {
-						logWarn("Warning cleaning " + p.Name + ": " + err.Error())
+						continue
+					}
+
+					if !info.IsDir() {
+						// If it's just a file, delete it directly
+						err := os.Remove(m)
+						if err != nil {
+							logWarn("Could not delete file " + m + ": " + err.Error())
+						}
+					} else {
+						// If it's a directory, read its contents
+						entries, err := os.ReadDir(m)
+						if err != nil {
+							logWarn("Could not read directory " + m + ": " + err.Error())
+							continue
+						}
+
+						// Loop through all files and subfolders inside the directory
+						for _, entry := range entries {
+							fullPath := filepath.Join(m, entry.Name())
+
+							// Delete the entry (file or subfolder)
+							err := os.RemoveAll(fullPath)
+							if err != nil {
+								// Common error: file is currently in use by another process
+								logWarn("Skipped (in use): " + entry.Name())
+							}
+						}
 					}
 				}
 			}
@@ -597,8 +633,9 @@ func runCleanup(programs []Program) {
 			logOK("Cleaned " + p.Name)
 		}
 	}
+
 	done <- true
-	fmt.Print("\r\033[K")
+	fmt.Print("\r\033[K") // Clear the spinner line
 
 	if *Flagdryrun {
 		logOK("Simulation finished. No files were removed.")
@@ -612,6 +649,8 @@ func runCleanup(programs []Program) {
 
 	// Calculate and display space savings
 	afterFree, _, _ := getDiskMetrics()
+
+	// Convert GB difference back to MB for display
 	totalCleanedMB := (afterFree - beforeFree) * 1024
 
 	if totalCleanedMB < 0 || *Flagdryrun {
