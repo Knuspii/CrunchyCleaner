@@ -30,7 +30,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.0"
+	CC_VERSION = "2.1"
 	COLS       = 62
 	LINES      = 30
 	YELLOW     = "\033[33m"
@@ -96,7 +96,7 @@ func spinner(text string, done chan bool) {
 			fmt.Print("\r\033[K") // Clear the line when task completes
 			return
 		default:
-			fmt.Printf("\r%s%s%s %s%s %s%s%s", YELLOW, frames[i%len(frames)], RC, CYAN, text, YELLOW, frames[i%len(frames)], RC)
+			fmt.Printf("\r%s%s%s %s%s %s%s%s ", YELLOW, frames[i%len(frames)], RC, CYAN, text, YELLOW, frames[i%len(frames)], RC)
 			time.Sleep(100 * time.Millisecond)
 			i++
 		}
@@ -203,8 +203,10 @@ func initApp() {
 
 	if sizeErr != nil || getcols == 0 || getlines == 0 {
 		fmt.Printf("System: Could not detect terminal size.\n")
+		time.Sleep(2 * time.Second)
 	} else if getcols != COLS || getlines != LINES {
 		fmt.Printf("System: Terminal size mismatch (Got %dx%d, Expected %dx%d)\n", getcols, getlines, COLS, LINES)
+		time.Sleep(2 * time.Second)
 	} else {
 		fmt.Printf("System: Terminal size optimized (%dx%d)\n", getcols, getlines)
 	}
@@ -256,7 +258,7 @@ func showBanner() {
  |  |______________|  | |#######|
  |                    | |||||||||
  |     ____________   |
- |    | __      |  |  | %sCrunchyCleaner - Clear Software Cache%s
+ |    | __      |  |  | %sCrunchyCleaner%s
  |    ||  |     |  |  | Made by: Knuspii, (M)
  |    ||__|     |  |  | Version: %s
  |____|_________|__|__| Disk-Space: %s / %s%s
@@ -273,11 +275,14 @@ func expandHome(path string) string {
 	return path
 }
 
-// getPrograms returns a curated list of cache locations for various popular software
 func getPrograms() []Program {
-	if goos == "windows" {
+	if runtime.GOOS == "windows" {
+		// Windows
+		home, _ := os.UserHomeDir()
 		appData := os.Getenv("APPDATA")
 		localAppData := os.Getenv("LOCALAPPDATA")
+		programFilesX86 := os.Getenv("ProgramFiles(x86)")
+		programFiles := os.Getenv("ProgramFiles")
 		return []Program{
 			{"Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
 			{"Thumbnail Cache", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
@@ -288,17 +293,31 @@ func getPrograms() []Program {
 			}, false},
 			{"Chrome Cache", []string{
 				filepath.Join(localAppData, "Google/Chrome/User Data/Default/Cache"),
-				filepath.Join(localAppData, "Google/Chrome/User Data/ShaderCache"),
+				filepath.Join(localAppData, "Google/Chrome/User Data/Default/Code Cache"),
+				filepath.Join(localAppData, "Google/Chrome/User Data/*/Cache"),
 			}, false},
 			{"Edge Cache", []string{
 				filepath.Join(localAppData, "Microsoft/Edge/User Data/Default/Cache"),
-				filepath.Join(localAppData, "Microsoft/Edge/User Data/ShaderCache"),
+				filepath.Join(localAppData, "Microsoft/Edge/User Data/*/Cache"),
+			}, false},
+			{"Brave Cache", []string{
+				filepath.Join(localAppData, "BraveSoftware/Brave-Browser/User Data/Default/Cache"),
+				filepath.Join(localAppData, "BraveSoftware/Brave-Browser/User Data/*/Cache"),
+			}, false},
+			{"Opera Cache", []string{
+				filepath.Join(localAppData, "Opera Software/Opera Stable/Cache"),
+				filepath.Join(localAppData, "Opera Software/Opera Stable/Code Cache"),
 			}, false},
 			{"Thunderbird Cache", []string{
 				filepath.Join(localAppData, "Thunderbird/Profiles/*/cache2"),
-				filepath.Join(localAppData, "Thunderbird/Profiles/*/startupCache"),
 			}, false},
-			{"Steam AppCache", []string{"C:/Program Files (x86)/Steam/appcache"}, false},
+			{"Steam AppCache", []string{
+				filepath.Join(programFilesX86, "Steam/appcache"),
+				filepath.Join(programFiles, "Steam/appcache"),
+			}, false},
+			{"Epic Games Cache", []string{
+				filepath.Join(localAppData, "EpicGamesLauncher/Saved/webcache"),
+			}, false},
 			{"Discord Cache", []string{
 				filepath.Join(appData, "discord/Cache"),
 				filepath.Join(appData, "discord/Code Cache"),
@@ -308,28 +327,79 @@ func getPrograms() []Program {
 			{"VS Code Cache", []string{
 				filepath.Join(appData, "Code/Cache"),
 				filepath.Join(appData, "Code/CachedData"),
+				filepath.Join(appData, "Code/CachedExtensionVSIXs"),
 				filepath.Join(appData, "Code/User/workspaceStorage"),
+				filepath.Join(appData, "Code/GPUCache"),
 			}, false},
-			{"Pip Cache", []string{filepath.Join(localAppData, "pip/Cache")}, false},
+			{"DirectX Shader Cache", []string{
+				filepath.Join(localAppData, "D3DSCache"),
+				filepath.Join(localAppData, "NVIDIA/GLCache"),
+			}, false},
 			{"Go Build Cache", []string{filepath.Join(localAppData, "go-build")}, false},
-			{"NPM Global Cache", []string{filepath.Join(localAppData, "npm-cache")}, false},
+			{"Pip Cache", []string{filepath.Join(localAppData, "pip/Cache")}, false},
+			{"NPM Cache", []string{filepath.Join(appData, "npm-cache/_cacache")}, false},
+			{"Yarn Cache", []string{
+				filepath.Join(localAppData, "Yarn/Cache"),
+				filepath.Join(appData, "Yarn/Cache"),
+			}, false},
+			{"Cargo Cache", []string{
+				filepath.Join(home, ".cargo/registry/cache"),
+				filepath.Join(home, ".cargo/git/db"),
+			}, false},
 		}
 	} else {
-		// Linux/Unix paths
+		// Linux
 		home, _ := os.UserHomeDir()
 		return []Program{
+			{"Temp Folder", []string{"/tmp", "/var/tmp"}, false},
 			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
 			{"Firefox Cache", []string{filepath.Join(home, ".cache/mozilla/firefox/*/cache2")}, false},
-			{"Chrome Cache", []string{filepath.Join(home, ".cache/google-chrome/Default/Cache")}, false},
-			{"Edge Cache", []string{filepath.Join(home, ".cache/microsoft-edge/Default/Cache")}, false},
-			{"Thunderbird Cache", []string{filepath.Join(home, ".cache/thunderbird/*/cache2")}, false},
-			{"Spotify Storage", []string{filepath.Join(home, ".cache/spotify")}, false},
-			{"Steam AppCache", []string{filepath.Join(home, ".steam/steam/appcache")}, false},
-			{"Discord Cache", []string{filepath.Join(home, ".cache/discord")}, false},
-			{"VS Code Cache", []string{filepath.Join(home, ".config/Code/Cache")}, false},
-			{"Pip Cache", []string{filepath.Join(home, ".cache/pip")}, false},
+			{"Chromium Cache", []string{
+				filepath.Join(home, ".cache/chromium/*/Cache"),
+				filepath.Join(home, ".cache/chromium/*/Code Cache"),
+			}, false},
+			{"Edge Cache", []string{
+				filepath.Join(home, ".cache/microsoft-edge/*/Cache"),
+				filepath.Join(home, ".cache/microsoft-edge/*/Code Cache"),
+			}, false},
+			{"Brave Cache", []string{
+				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Cache"),
+				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Code Cache"),
+			}, false},
+			{"Opera Cache", []string{
+				filepath.Join(home, ".cache/opera/Cache"),
+				filepath.Join(home, ".config/opera/Cache"),
+			}, false},
+			{"Thunderbird Cache", []string{
+				filepath.Join(home, ".cache/thunderbird/*/cache2"),
+			}, false},
+			{"Steam Cache", []string{
+				filepath.Join(home, ".steam/steam/appcache"),
+				filepath.Join(home, ".local/share/Steam/appcache"),
+				filepath.Join(home, ".local/share/Steam/config/htmlcache"),
+			}, false},
+			{"Epic Games (Heroic/Lutris) Cache", []string{
+				filepath.Join(home, ".config/heroic/WebCache"),
+				filepath.Join(home, ".local/share/lutris/runtime"),
+			}, false},
+			{"Discord Cache", []string{
+				filepath.Join(home, ".config/discord/Cache"),
+				filepath.Join(home, ".config/discord/Code Cache"),
+				filepath.Join(home, ".config/discord/GPUCache"),
+			}, false},
+			{"Spotify Cache", []string{filepath.Join(home, ".cache/spotify")}, false},
+			{"VS Code Cache", []string{
+				filepath.Join(home, ".config/Code/Cache"),
+				filepath.Join(home, ".config/Code/CachedData"),
+				filepath.Join(home, ".config/Code/User/workspaceStorage"),
+				filepath.Join(home, ".config/Code/GPUCache"),
+			}, false},
+			{"Mesa Shader Cache", []string{filepath.Join(home, ".cache/mesa_shader_cache")}, false},
 			{"Go Build Cache", []string{filepath.Join(home, ".cache/go-build")}, false},
-			{"NPM Cache", []string{filepath.Join(home, ".npm")}, false},
+			{"Pip Cache", []string{filepath.Join(home, ".cache/pip")}, false},
+			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
+			{"Yarn Cache", []string{filepath.Join(home, ".cache/yarn")}, false},
+			{"Cargo Cache", []string{filepath.Join(home, ".cargo/registry/cache")}, false},
 		}
 	}
 }
@@ -354,7 +424,7 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 		clearScreen()
 		showBanner()
 		fmt.Printf("Use ↑/↓ or W/S to navigate | SPACE to select | ENTER to clean\n")
-		fmt.Printf("Software found: [%d]\n", len(existing))
+		fmt.Printf("Folders found: [%d]\n", len(existing))
 	}
 
 	// Render each detected program entry
@@ -576,7 +646,7 @@ func main() {
 
 	if *Flagversion {
 		fmt.Printf("CrunchyCleaner %s\n", CC_VERSION)
-		cc_exit()
+		os.Exit(0)
 	}
 
 	if !*Flagnoinit {

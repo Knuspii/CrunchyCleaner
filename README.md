@@ -13,23 +13,29 @@
 - 💻 **Cross-Platform:** Works on both **Windows** and **Linux**
 - ⚡ **Lightweight:** Single binary, no dependencies (just download and run it)
 - 📲 **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
-- 🧐 **Should be safe:** because it only deletes [cache](https://wikipedia.org/wiki/Cache_(computing)) files
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
 ## Supported Software List:
+- Temp Folders
 - Thumbnail Cache
 - Firefox
 - Google Chrome
 - Microsoft Edge
+- Brave
+- Opera
 - Thunderbird
 - Steam
+- Epic Games
 - Discord
 - Spotify
 - Visual Studio Code
-- Pip Cache
+- DirectX Shader Cache
 - Go Build Cache
+- Pip Cache
 - NPM Cache
+- Yarn Cache
+- Cargo Cache
 
 ## ⚙️ Start options:
 ```
@@ -38,7 +44,7 @@ Usage:
 
 Options:
   -dry-run
-        Simulation mode: identifies files without deleting them
+        Simulation mode without deleting files (for testing)
   -no-init
         Skip terminal resizing and environment initialization
   -version
@@ -50,7 +56,7 @@ Options:
 **A:** No.\
 \
 **Q:** What does it actually delete?\
-**A:** Only cache files in your profile directory.\
+**A:** Only cache files and temp files.\
 \
 **Q:** Why another cleaner?\
 **A:** Because this one is easy, simple, small and lightweight.
