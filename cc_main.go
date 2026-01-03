@@ -620,8 +620,9 @@ func runCleanup(programs []Program) {
 							// Delete the entry (file or subfolder)
 							err := os.RemoveAll(fullPath)
 							if err != nil {
-								// Common error: file is currently in use by another process
-								logWarn("Skipped (in use): " + entry.Name())
+								// Just log the error message provided by the OS
+								// This covers "Permission Denied", "In Use", etc.
+								logWarn(fmt.Sprintf("Skipped %s: %v", entry.Name(), err))
 							}
 						}
 					}
