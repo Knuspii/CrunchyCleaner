@@ -1,9 +1,14 @@
-[![Golang](https://img.shields.io/static/v1?label=Made%20with&message=Go&logo=go&color=007ACC)](https://go.dev/)
-[![Go version](https://img.shields.io/github/go-mod/go-version/knuspii/crunchycleaner)](https://github.com/knuspii/crunchycleaner)
-[![Go Report Card](https://goreportcard.com/badge/github.com/knuspii/crunchycleaner)](https://goreportcard.com/report/github.com/knuspii/crunchycleaner)
-[![Build](https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml/badge.svg)](https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml)
-[![GitHub Issues](https://img.shields.io/github/issues/knuspii/crunchycleaner)](https://github.com/knuspii/crunchycleaner/issues)
-[![GitHub Stars](https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social)](https://github.com/knuspii/crunchycleaner/stargazers)
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/static/v1?label=Made%20with&message=Go&logo=go&color=007ACC" alt="Golang" /></a>
+  <a href="https://github.com/knuspii/crunchycleaner"><img src="https://img.shields.io/github/go-mod/go-version/knuspii/crunchycleaner" alt="Go version" /></a>
+  <a href="https://goreportcard.com/report/github.com/knuspii/crunchycleaner"><img src="https://goreportcard.com/badge/github.com/knuspii/crunchycleaner" alt="Go Report Card" /></a>
+  <a href="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml"><img src="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml/badge.svg" alt="Build" /></a>
+  <a href="https://github.com/knuspii/crunchycleaner/issues"><img src="https://img.shields.io/github/issues/knuspii/crunchycleaner" alt="GitHub Issues" /></a>
+  <a href="https://github.com/knuspii/crunchycleaner/stargazers"><img src="https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social" alt="GitHub Stars" /></a>
+  <br>
+  <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License GPLv3" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?logo=linux&logoColor=white" alt="Platform" />
+</p>
 
 <h1>CrunchyCleaner 💾🧹</h1>
 
