@@ -43,6 +43,8 @@
 - Yarn Cache
 - Cargo Cache
 
+**Not working with software installed by snap**
+
 ## ⚙️ Start options:
 ```
 Usage:
