@@ -22,7 +22,8 @@
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 
 ## Supported Software List:
-- Temp Folders
+- System Logs
+- System Temp Folders
 - Thumbnail Cache
 - Firefox
 - Google Chrome
