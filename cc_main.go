@@ -1,10 +1,20 @@
 // ##################################################################
-// CrunchyCleaner - System & Software Cache Cleaner
-// Made by: Knuspii (M)
+// CrunchyCleaner
+// Made by: Knuspii, (M)
+// Project: https://github.com/knuspii/crunchycleaner
 //
-// LICENSE: CC BY-NC 4.0 (Creative Commons Attribution-NonCommercial)
-// - You must attribute the author (link to GitHub).
-// - Commercial use is strictly prohibited.
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 // ##################################################################
 
 package main
@@ -30,7 +40,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.1"
+	CC_VERSION = "2.2"
 	COLS       = 62
 	LINES      = 30
 	YELLOW     = "\033[33m"
@@ -72,6 +82,7 @@ func clearScreen() {
 
 // cc_exit provides a clean termination of the application
 func cc_exit() {
+	keyboard.Close()
 	fmt.Printf("\nExiting CrunchyCleaner. Goodbye!\n")
 	os.Exit(0)
 }
@@ -116,30 +127,6 @@ func runCommand(cmd []string) (string, error) {
 		return out, fmt.Errorf("command failed: %v", err)
 	}
 	return out, nil
-}
-
-// isSafePath checks whether a given path is safe to delete.
-// It prevents dangerous operations like deleting root directories
-// or very short paths that could wipe critical system locations.
-func isSafePath(p string) bool {
-	p = filepath.Clean(p)
-
-	if runtime.GOOS == "windows" {
-		// Block deletion of drive roots like "C:\"
-		if strings.HasSuffix(p, ":\\") {
-			return false
-		}
-	}
-
-	// Block deletion of Unix root directory "/"
-	if p == "/" {
-		return false
-	}
-
-	// Additional safety net:
-	// Very short paths are likely system-critical
-	// Require a minimum path length to reduce risk of catastrophic deletes
-	return len(p) > 3
 }
 
 // initApp prepares the terminal environment (Title, Resize, User Info)
@@ -214,65 +201,68 @@ func initApp() {
 	time.Sleep(1 * time.Second)
 }
 
-// getDiskMetrics calculates total and free space for the root/system drive
-func getDiskMetrics() (float64, string, string) {
-	var diskTotal, diskFree string
-	var freeGB float64
+// isSafePath checks whether a given path is safe to delete.
+// It prevents dangerous operations like deleting root directories
+// or very short paths that could wipe critical system locations.
+func isSafePath(p string) bool {
+	// Clean the path to resolve ".." and remove double slashes
+	p = filepath.Clean(p)
+	pLower := strings.ToLower(p)
 
-	if goos == "windows" {
-		// Query C: drive stats via PowerShell
-		sizeOut, _ := exec.Command("powershell", "-Command",
-			"(Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Name -eq 'C'}).Used, (Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Name -eq 'C'}).Free").Output()
-		parts := strings.Fields(string(sizeOut))
-		if len(parts) >= 2 {
-			used, _ := strconv.ParseFloat(parts[0], 64)
-			free, _ := strconv.ParseFloat(parts[1], 64)
-			freeGB = free / 1024 / 1024 / 1024
-			totalGB := (used + free) / 1024 / 1024 / 1024
-			diskTotal = fmt.Sprintf("%.2f GB", totalGB)
-			diskFree = fmt.Sprintf("%.2f GB", freeGB)
+	// Absolute Base Protection: Root Directories
+	if p == "/" || p == "\\" {
+		return false
+	}
+
+	if runtime.GOOS == "windows" {
+		// Block "C:", "C:\", "D:\" etc.
+		if len(p) <= 3 && strings.Contains(p, ":") {
+			return false
 		}
+
+		// Critical Windows System Directories
+		// Even if globbed incorrectly, these hardcoded paths provide a safety net.
+		systemBlacklist := []string{
+			"c:\\windows",
+			"c:\\windows\\system32",
+			"c:\\users",
+			"c:\\program files",
+			"c:\\program files (x86)",
+			"c:\\programdata",
+		}
+		for _, s := range systemBlacklist {
+			if pLower == s {
+				return false
+			}
+		}
+
+		// Prevent deleting the entire User Profile directory
+		userProfile := strings.ToLower(os.Getenv("USERPROFILE"))
+		if pLower == userProfile {
+			return false
+		}
+
 	} else {
-		// Use standard df command for Unix-like systems
-		dfOut, _ := exec.Command("sh", "-c", "df -BG --output=size,avail / | tail -1 | tr -d 'G'").Output()
-		parts := strings.Fields(string(dfOut))
-		if len(parts) >= 2 {
-			totalVal, _ := strconv.ParseFloat(parts[0], 64)
-			freeVal, _ := strconv.ParseFloat(parts[1], 64)
-			freeGB = freeVal
-			diskTotal = fmt.Sprintf("%.2f GB", totalVal)
-			diskFree = fmt.Sprintf("%.2f GB", freeVal)
+		// Unix/Linux System Blacklist
+		systemBlacklist := []string{
+			"/etc", "/bin", "/sbin", "/lib", "/usr", "/boot", "/root", "/home", "/proc", "/sys", "/dev",
+		}
+		for _, s := range systemBlacklist {
+			if pLower == s {
+				return false
+			}
 		}
 	}
-	return freeGB, diskTotal, diskFree
-}
 
-func showBanner() {
-	_, total, free := getDiskMetrics()
-	fmt.Printf(`%s  ____________________     .-.
- |  |              |  |    |_|
- |[]|              |[]|    | |
- |  |              |  |    |=|
- |  |              |  |  .=/I\=.
- |  |______________|  | ////V\\\\
- |  |______________|  | |#######|
- |                    | |||||||||
- |     ____________   |
- |    | __      |  |  | %sCrunchyCleaner%s
- |    ||  |     |  |  | Made by: Knuspii, (M)
- |    ||__|     |  |  | Version: %s
- |____|_________|__|__| Disk-Space: %s / %s%s
-`, YELLOW, RC, YELLOW, CC_VERSION, free, total, RC)
-	line()
-}
-
-// expandHome resolves the shorthand '~/ ' to the absolute user home directory
-func expandHome(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, path[2:])
+	// Most cache directories are deep in the file system (e.g., AppData/Local/Temp).
+	// We count the number of separators to ensure we aren't deleting a high-level folder.
+	// This allows "C:\Users\Name\AppData", but blocks "C:\Users\Name" or "C:\Users".
+	parts := strings.Split(strings.Trim(p, string(os.PathSeparator)), string(os.PathSeparator))
+	if len(parts) < 3 {
+		return false
 	}
-	return path
+
+	return true
 }
 
 func getPrograms() []Program {
@@ -286,11 +276,12 @@ func getPrograms() []Program {
 		winDir := os.Getenv("WINDIR")
 		return []Program{
 			{"System Logs (Admin)", []string{
-				filepath.Join(winDir, "Panther"), // Setup Logs
+				filepath.Join(winDir, "Panther"),
 				filepath.Join(winDir, "Logs"),
 			}, false},
-			{"Windows Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
-			{"Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
+			{"System Temp Folders (Admin)", []string{filepath.Join(winDir, "Temp")}, false},
+			{"Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
+			{"User Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
 			{"Thumbnail Cache", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
 			{"Firefox Cache", []string{
 				filepath.Join(localAppData, "Mozilla/Firefox/Profiles/*/cache2"),
@@ -301,14 +292,17 @@ func getPrograms() []Program {
 				filepath.Join(localAppData, "Google/Chrome/User Data/Default/Cache"),
 				filepath.Join(localAppData, "Google/Chrome/User Data/Default/Code Cache"),
 				filepath.Join(localAppData, "Google/Chrome/User Data/*/Cache"),
+				filepath.Join(localAppData, "Google/Chrome/User Data/Default/Media Cache"),
 			}, false},
 			{"Edge Cache", []string{
 				filepath.Join(localAppData, "Microsoft/Edge/User Data/Default/Cache"),
 				filepath.Join(localAppData, "Microsoft/Edge/User Data/*/Cache"),
+				filepath.Join(localAppData, "Microsoft/Edge/User Data/Default/Media Cache"),
 			}, false},
 			{"Brave Cache", []string{
 				filepath.Join(localAppData, "BraveSoftware/Brave-Browser/User Data/Default/Cache"),
 				filepath.Join(localAppData, "BraveSoftware/Brave-Browser/User Data/*/Cache"),
+				filepath.Join(localAppData, "BraveSoftware/Brave-Browser/User Data/Default/Media Cache"),
 			}, false},
 			{"Opera Cache", []string{
 				filepath.Join(localAppData, "Opera Software/Opera Stable/Cache"),
@@ -357,8 +351,8 @@ func getPrograms() []Program {
 		// Linux
 		home, _ := os.UserHomeDir()
 		return []Program{
-			{"System Logs (Root)", []string{"/var/log"}, false},
-			{"Temp Folder", []string{"/tmp", "/var/tmp"}, false},
+			{"System Logs (Root)", []string{"/var/log/*.log"}, false},
+			{"System Temp Folders (Root)", []string{"/tmp"}, false},
 			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
 			{"Firefox Cache", []string{filepath.Join(home, ".cache/mozilla/firefox/*/cache2")}, false},
 			{"Chromium Cache", []string{
@@ -411,7 +405,106 @@ func getPrograms() []Program {
 	}
 }
 
+// getDiskMetrics calculates total and free space for the root/system drive
+func getDiskMetrics() (freeGB float64, totalStr string, freeStr string) {
+	// Default values if something fails
+	totalStr = "N/A"
+	freeStr = "N/A"
+
+	if goos == "windows" {
+		// We use a single PowerShell command to get both values to reduce overhead
+		cmdArgs := []string{
+			"powershell", "-NoProfile", "-Command",
+			"(Get-PSDrive C | Select-Object Used, Free) | ForEach-Object { \"$($_.Used) $($_.Free)\" }",
+		}
+		out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
+
+		if err == nil {
+			parts := strings.Fields(string(out))
+			if len(parts) >= 2 {
+				used, _ := strconv.ParseFloat(parts[0], 64)
+				free, _ := strconv.ParseFloat(parts[1], 64)
+
+				totalGB := (used + free) / 1024 / 1024 / 1024
+				freeGB = free / 1024 / 1024 / 1024
+
+				totalStr = fmt.Sprintf("%.2f GB", totalGB)
+				freeStr = fmt.Sprintf("%.2f GB", freeGB)
+			}
+		}
+	} else {
+		// Standard Unix 'df' command
+		// -B1 ensures output in bytes for better precision before converting to GB
+		out, err := exec.Command("sh", "-c", "df -B1 --output=size,avail / | tail -1").Output()
+
+		if err == nil {
+			parts := strings.Fields(string(out))
+			if len(parts) >= 2 {
+				totalBytes, _ := strconv.ParseFloat(parts[0], 64)
+				freeBytes, _ := strconv.ParseFloat(parts[1], 64)
+
+				freeGB = freeBytes / 1024 / 1024 / 1024
+				totalStr = fmt.Sprintf("%.2f GB", totalBytes/1024/1024/1024)
+				freeStr = fmt.Sprintf("%.2f GB", freeGB)
+			}
+		}
+	}
+	return freeGB, totalStr, freeStr
+}
+
+// formatMB converts bytes to a string representing Megabytes
+func formatMB(bytes int64) string {
+	mb := float64(bytes) / 1024 / 1024
+	return fmt.Sprintf("%.2f MB", mb)
+}
+
+// getDirSize remains the same (calculating in bytes first for precision)
+func getDirSize(path string) int64 {
+	var size int64
+	matches, _ := filepath.Glob(expandHome(path))
+	for _, m := range matches {
+		filepath.Walk(m, func(_ string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !info.IsDir() {
+				size += info.Size()
+			}
+			return nil
+		})
+	}
+	return size
+}
+
+// expandHome resolves the shorthand '~/ ' to the absolute user home directory
+func expandHome(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, path[2:])
+	}
+	return path
+}
+
 // --- Menu UI Logic ---
+
+func showBanner() {
+	_, total, free := getDiskMetrics()
+	fmt.Printf(`%s  ____________________     .-.
+ |  |              |  |    |_|
+ |[]|              |[]|    | |
+ |  |              |  |    |=|
+ |  |              |  |  .=/I\=.
+ |  |______________|  | ////V\\\\
+ |  |______________|  | |#######|
+ |                    | |||||||||
+ |     ____________   |
+ |    | __      |  |  | %sCrunchyCleaner%s
+ |    ||  |     |  |  | Made by: Knuspii, (M)
+ |    ||__|     |  |  | Version: %s
+ |____|_________|__|__| Disk-Space: %s / %s%s
+`, YELLOW, RC, YELLOW, CC_VERSION, free, total, RC)
+	line()
+}
 
 func logInfo(msg string) {
 	fmt.Printf("\r\033[K%s[+] %s%s\n", CYAN, msg, RC)
@@ -430,7 +523,7 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 	if fullRedraw {
 		clearScreen()
 		showBanner()
-		fmt.Printf("Use ↑/↓ or W/S to navigate | SPACE to select | ENTER to clean\n")
+		fmt.Printf("Use ↑/↓ or W/S to navigate | [ENTER] to select | [C] to clean\n")
 		fmt.Printf("Folders found: [%d]\n", len(existing))
 	}
 
@@ -465,17 +558,18 @@ func handleMenu() {
 	allPrograms := getPrograms()
 	existing := []Program{}
 	for _, p := range allPrograms {
+		var totalSize int64
 		found := false
 		for _, path := range p.Paths {
-			// Check if any file/folder matches the glob pattern
 			matches, _ := filepath.Glob(expandHome(path))
-			// If at least one path exists, mark program as found
 			if len(matches) > 0 {
 				found = true
-				break
+				totalSize += getDirSize(path) // Calculate size for this program
 			}
 		}
 		if found {
+			// We modify the name slightly to include the size
+			p.Name = fmt.Sprintf("%-30s %s(%s)%s", p.Name, YELLOW, formatMB(totalSize), RC)
 			existing = append(existing, p)
 		}
 	}
@@ -517,7 +611,7 @@ func handleMenu() {
 				idx++
 				updated = true
 			}
-		} else if char == ' ' || key == keyboard.KeySpace {
+		} else if char == ' ' || key == keyboard.KeyEnter || key == keyboard.KeySpace {
 			existing[idx].Checked = !existing[idx].Checked
 			updated = true
 		} else if char == 'a' || char == 'A' {
@@ -533,7 +627,7 @@ func handleMenu() {
 				existing[i].Checked = !allChecked
 			}
 			updated = true
-		} else if key == keyboard.KeyEnter {
+		} else if char == 'c' || char == 'C' {
 			clearScreen()
 			showBanner()
 			runCleanup(existing)
@@ -586,7 +680,7 @@ func runCleanup(programs []Program) {
 
 			for _, m := range matches {
 				if *Flagdryrun {
-					logInfo(fmt.Sprintf("[SIMULATE] Would empty directory: %s", m))
+					logInfo(fmt.Sprintf("Would empty directory: %s", m))
 				} else {
 					if !isSafePath(m) {
 						logWarn("Skipped unsafe path: " + m)
