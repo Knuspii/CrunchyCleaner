@@ -6,7 +6,7 @@
   <a href="https://github.com/knuspii/crunchycleaner/issues"><img src="https://img.shields.io/github/issues/knuspii/crunchycleaner" alt="GitHub Issues" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/stargazers"><img src="https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social" alt="GitHub Stars" /></a>
   <br>
-  <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License GPLv3" />
+  <img src="https://img.shields.io/github/license/knuspii/crunchycleaner" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?logo=linux&logoColor=white" alt="Platform" />
 </p>
 
@@ -20,6 +20,7 @@
 - 📲 **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
+[![Download](https://img.shields.io/github/downloads/Knuspii/crunchycleaner/total?color=green)](https://github.com/Knuspii/crunchycleaner/releases)
 
 ## Supported Software List:
 - System Logs
@@ -45,6 +46,9 @@
 
 **Not working with software installed by snap**
 
+> [!WARNING]
+> You use this tool at your own risk!
+
 ## ⚙️ Start options:
 ```
 Usage:
@@ -68,9 +72,6 @@ Options:
 \
 **Q:** Why another cleaner?\
 **A:** Because this one is easy, simple, small and lightweight.
-
-> [!WARNING]
-> You use this tool at your own risk!
 
 ## External Dependencies
 This project uses the following external dependencies:
