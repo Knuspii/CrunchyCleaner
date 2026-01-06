@@ -97,14 +97,17 @@ func line() {
 	fmt.Printf("%s#%s~%s\n", YELLOW, strings.Repeat("-", COLS-2), RC)
 }
 
-// spinner visualizes background tasks to keep the UI responsive
-func spinner(text string, done chan bool) {
+// spinner visualizes background tasks and cleans up properly
+func spinner(text string, stop chan bool, ack chan bool) {
 	frames := []string{"|", "/", "-", "\\"}
 	i := 0
 	for {
 		select {
-		case <-done:
-			fmt.Print("\r\033[K") // Clear the line when task completes
+		case <-stop:
+			// Clear the line and move cursor to start
+			fmt.Print("\r\033[K")
+			// Signal back to main that we are done
+			ack <- true
 			return
 		default:
 			fmt.Printf("\r%s%s%s %s%s %s%s%s ", YELLOW, frames[i%len(frames)], RC, CYAN, text, YELLOW, frames[i%len(frames)], RC)
@@ -550,8 +553,9 @@ func handleMenu() {
 	showBanner()
 
 	// Initial scan of the filesystem to find existing directories
-	done := make(chan bool)
-	go spinner("Scanning filesystem", done)
+	stop := make(chan bool)
+	ack := make(chan bool)
+	go spinner("Scanning filesystem", stop, ack)
 
 	// Retrieve all known programs and filter only those
 	// whose cache paths actually exist on the system
@@ -573,8 +577,8 @@ func handleMenu() {
 			existing = append(existing, p)
 		}
 	}
-	time.Sleep(1 * time.Second)
-	done <- true
+	stop <- true // Tell spinner to stop
+	<-ack        // WAIT for spinner to clear the line
 
 	// Abort if nothing was detected
 	if len(existing) == 0 {
@@ -653,8 +657,9 @@ func runCleanup(programs []Program) {
 		statusMsg = "[DRY RUN] Simulating cleanup"
 	}
 
-	done := make(chan bool)
-	go spinner(statusMsg, done)
+	stop := make(chan bool)
+	ack := make(chan bool)
+	go spinner(statusMsg, stop, ack)
 
 	fmt.Printf("Cleaning caches started...\n")
 
@@ -664,7 +669,7 @@ func runCleanup(programs []Program) {
 		fmt.Printf("You use this tool at your own risk!\n")
 	}
 
-	fmt.Printf("Press [CTRL+C] to abort\n")
+	fmt.Printf("Press [CTRL+C] to cancel\n")
 	time.Sleep(1 * time.Second)
 
 	count := 0
@@ -728,9 +733,8 @@ func runCleanup(programs []Program) {
 			logOK("Cleaned " + p.Name)
 		}
 	}
-
-	done <- true
-	fmt.Print("\r\033[K") // Clear the spinner line
+	stop <- true // Tell spinner to stop
+	<-ack        // WAIT for spinner to clear the line
 
 	if *Flagdryrun {
 		logOK("Simulation finished. No files were removed.")
