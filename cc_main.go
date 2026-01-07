@@ -40,7 +40,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.2"
+	CC_VERSION = "2.3"
 	COLS       = 62
 	LINES      = 30
 	YELLOW     = "\033[33m"
@@ -50,8 +50,8 @@ const (
 )
 
 var (
-	goos              = runtime.GOOS
-	getcols, getlines int
+	goos                = runtime.GOOS
+	origCols, origLines int
 	// CLI Flags
 	Flagversion = flag.Bool("version", false, "Display version information")
 	Flagnoinit  = flag.Bool("no-init", false, "Skip terminal resizing and environment initialization")
@@ -75,15 +75,29 @@ func clearScreen() {
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 	} else {
-		// Unix-like systems use ANSI escape sequences
-		fmt.Print("\033[H\033[2J")
+		cmd := exec.Command("bash", "-c", "clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
 	}
+	// Fallback use ANSI escape sequences
+	fmt.Print("\033[H\033[2J")
 }
 
 // cc_exit provides a clean termination of the application
 func cc_exit() {
+	fmt.Printf("\nRestoring terminal settings...\n")
+
+	// Close keyboard
 	keyboard.Close()
-	fmt.Printf("\nExiting CrunchyCleaner. Goodbye!\n")
+
+	// Enable cursor
+	fmt.Print("\033[?25h")
+
+	// Restore size
+	terminalresize(origCols, origLines)
+
+	fmt.Printf("Exiting CrunchyCleaner. Goodbye!\n")
 	os.Exit(0)
 }
 
@@ -117,26 +131,60 @@ func spinner(text string, stop chan bool, ack chan bool) {
 	}
 }
 
-// runCommand wraps exec.Command to provide easy access to combined stdout/stderr
+// runCommand executes a system command and returns the combined stdout and stderr as a string.
+// It trims leading and trailing whitespace from the output.
 func runCommand(cmd []string) (string, error) {
+	// Check if the command slice is empty to avoid index out of range
 	if len(cmd) == 0 {
 		return "", errors.New("command is empty")
 	}
+
+	// Create the command: cmd[0] is the binary, cmd[1:] are the arguments
 	c := exec.Command(cmd[0], cmd[1:]...)
+
+	// Execute and capture both standard output and error streams
 	outBytes, err := c.CombinedOutput()
 	out := strings.TrimSpace(string(outBytes))
 
+	// If an error occurs, return the output (which might contain error details) and the error
 	if err != nil {
-		return out, fmt.Errorf("command failed: %v", err)
+		return out, fmt.Errorf("command execution failed: %w", err)
 	}
+
 	return out, nil
+}
+
+func terminalresize(w int, h int) {
+	// OS-specific Terminal Resizing
+	if goos == "windows" {
+		psCmd := fmt.Sprintf(
+			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
+			w, h,
+		)
+		runCommand([]string{"powershell", "-NoProfile", "-Command", psCmd})
+	}
+
+	// Generic ANSI resize fallback for modern terminals
+	fmt.Printf("\033[8;%d;%dt", h, w)
 }
 
 // initApp prepares the terminal environment (Title, Resize, User Info)
 func initApp() {
 	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
 
-	// Fetching the current system user for the display
+	// Get current terminal size
+	if goos == "windows" {
+		out, _ := runCommand([]string{
+			"powershell", "-NoProfile", "-Command",
+			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
+		})
+		fmt.Sscanf(strings.TrimSpace(out), "%d %d", &origCols, &origLines)
+	} else {
+		out, _ := runCommand([]string{"sh", "-c", "stty size < /dev/tty"})
+		fmt.Sscanf(strings.TrimSpace(out), "%d %d", &origLines, &origCols)
+	}
+
+	// Fetching the current system user
 	usr, err := user.Current()
 	if err != nil {
 		fmt.Printf("Username: unknown\n")
@@ -152,56 +200,8 @@ func initApp() {
 
 	// Set Terminal Title via ANSI sequence
 	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
-
-	// OS-specific Terminal Resizing
-	switch goos {
-	case "windows":
-		runCommand([]string{"cmd", "/C", "title", "CrunchyCleaner"})
-		// Use PowerShell to force specific Window and Buffer size
-		psCmd := fmt.Sprintf(
-			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
-			COLS, LINES,
-		)
-		runCommand([]string{"powershell", "-NoProfile", "-Command", psCmd})
-	}
-
-	// Generic ANSI resize fallback for modern terminals
-	fmt.Printf("\033[8;%d;%dt", LINES, COLS)
-
-	// Verify if the terminal actually resized to match the UI expectations
-	sizeErr := error(nil)
-	if goos == "windows" {
-		out, err := runCommand([]string{
-			"powershell",
-			"-NoProfile",
-			"-Command",
-			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
-		})
-		if err == nil {
-			fmt.Sscanf(strings.TrimSpace(out), "%d %d", &getcols, &getlines)
-		} else {
-			sizeErr = err
-		}
-	} else {
-		out, err := runCommand([]string{"sh", "-c", "stty size < /dev/tty"})
-		if err == nil {
-			fmt.Sscanf(strings.TrimSpace(out), "%d %d", &getlines, &getcols)
-		} else {
-			sizeErr = err
-		}
-	}
-
-	if sizeErr != nil || getcols == 0 || getlines == 0 {
-		fmt.Printf("System: Could not detect terminal size.\n")
-		time.Sleep(2 * time.Second)
-	} else if getcols != COLS || getlines != LINES {
-		fmt.Printf("System: Terminal size mismatch (Got %dx%d, Expected %dx%d)\n", getcols, getlines, COLS, LINES)
-		time.Sleep(2 * time.Second)
-	} else {
-		fmt.Printf("System: Terminal size optimized (%dx%d)\n", getcols, getlines)
-	}
-
-	time.Sleep(1 * time.Second)
+	// Resize terminal
+	terminalresize(COLS, LINES)
 }
 
 // isSafePath checks whether a given path is safe to delete.
@@ -255,14 +255,6 @@ func isSafePath(p string) bool {
 				return false
 			}
 		}
-	}
-
-	// Most cache directories are deep in the file system (e.g., AppData/Local/Temp).
-	// We count the number of separators to ensure we aren't deleting a high-level folder.
-	// This allows "C:\Users\Name\AppData", but blocks "C:\Users\Name" or "C:\Users".
-	parts := strings.Split(strings.Trim(p, string(os.PathSeparator)), string(os.PathSeparator))
-	if len(parts) < 3 {
-		return false
 	}
 
 	return true
@@ -556,6 +548,7 @@ func handleMenu() {
 	stop := make(chan bool)
 	ack := make(chan bool)
 	go spinner("Scanning filesystem", stop, ack)
+	time.Sleep(1 * time.Second)
 
 	// Retrieve all known programs and filter only those
 	// whose cache paths actually exist on the system
@@ -657,10 +650,6 @@ func runCleanup(programs []Program) {
 		statusMsg = "[DRY RUN] Simulating cleanup"
 	}
 
-	stop := make(chan bool)
-	ack := make(chan bool)
-	go spinner(statusMsg, stop, ack)
-
 	fmt.Printf("Cleaning caches started...\n")
 
 	if *Flagdryrun {
@@ -671,6 +660,10 @@ func runCleanup(programs []Program) {
 
 	fmt.Printf("Press [CTRL+C] to cancel\n")
 	time.Sleep(1 * time.Second)
+
+	stop := make(chan bool)
+	ack := make(chan bool)
+	go spinner(statusMsg, stop, ack)
 
 	count := 0
 	for _, p := range programs {
