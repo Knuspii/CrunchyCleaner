@@ -202,6 +202,7 @@ func initApp() {
 	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
 	// Resize terminal
 	terminalresize(COLS, LINES)
+	time.Sleep(1 * time.Second)
 }
 
 // isSafePath checks whether a given path is safe to delete.
@@ -306,9 +307,10 @@ func getPrograms() []Program {
 			{"Thunderbird Cache", []string{
 				filepath.Join(localAppData, "Thunderbird/Profiles/*/cache2"),
 			}, false},
-			{"Steam AppCache", []string{
+			{"Steam Cache", []string{
 				filepath.Join(programFilesX86, "Steam/appcache"),
 				filepath.Join(programFiles, "Steam/appcache"),
+				filepath.Join(localAppData, "Steam/htmlcache"),
 			}, false},
 			{"Epic Games Cache", []string{
 				filepath.Join(localAppData, "EpicGamesLauncher/Saved/webcache"),
@@ -349,7 +351,8 @@ func getPrograms() []Program {
 			{"System Logs (Root)", []string{"/var/log/*.log"}, false},
 			{"System Temp Folders (Root)", []string{"/tmp"}, false},
 			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
-			{"Firefox Cache", []string{filepath.Join(home, ".cache/mozilla/firefox/*/cache2")}, false},
+			{"Firefox Cache", []string{
+				filepath.Join(home, ".cache/mozilla/firefox/*/cache2")}, false},
 			{"Chromium Cache", []string{
 				filepath.Join(home, ".cache/chromium/*/Cache"),
 				filepath.Join(home, ".cache/chromium/*/Code Cache"),
@@ -723,7 +726,12 @@ func runCleanup(programs []Program) {
 		}
 
 		if !*Flagdryrun {
-			logOK("Cleaned " + p.Name)
+			// Extract display name without size info
+			displayName := p.Name
+			if idx := strings.Index(p.Name, "  "); idx != -1 {
+				displayName = p.Name[:idx]
+			}
+			logOK("Cleaned " + strings.TrimSpace(displayName))
 		}
 	}
 	stop <- true // Tell spinner to stop
