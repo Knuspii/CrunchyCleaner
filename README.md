@@ -10,9 +10,10 @@
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?logo=linux&logoColor=white" alt="Platform" />
 </p>
 
+<div align="center">
 <h1>CrunchyCleaner 💾🧹</h1>
-
 <img src="assets/preview.png" width="400" height="400" alt="Preview">
+</div>
 
 ### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
 - 💻 **Cross-Platform:** Works on both **Windows** and **Linux**
