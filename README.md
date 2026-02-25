@@ -1,9 +1,7 @@
 <p align="center">
   <a href="https://go.dev/"><img src="https://img.shields.io/static/v1?label=Made%20with&message=Go&logo=go&color=007ACC" alt="Golang" /></a>
-  <a href="https://github.com/knuspii/crunchycleaner"><img src="https://img.shields.io/github/go-mod/go-version/knuspii/crunchycleaner" alt="Go version" /></a>
   <a href="https://goreportcard.com/report/github.com/knuspii/crunchycleaner"><img src="https://goreportcard.com/badge/github.com/knuspii/crunchycleaner" alt="Go Report Card" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml"><img src="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml/badge.svg" alt="Build" /></a>
-  <a href="https://github.com/knuspii/crunchycleaner/issues"><img src="https://img.shields.io/github/issues/knuspii/crunchycleaner" alt="GitHub Issues" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/stargazers"><img src="https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social" alt="GitHub Stars" /></a>
   <br>
   <img src="https://img.shields.io/github/license/knuspii/crunchycleaner" />
@@ -11,7 +9,7 @@
 </p>
 
 <div align="center">
-<h1>CrunchyCleaner 💾🧹</h1>
+<h1>CrunchyCleaner <img src="assets/logo.png" width="64" height="64" alt="Logo"></h1>
 <img src="assets/preview.png" width="400" height="400" alt="Preview">
 </div>
 
