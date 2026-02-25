@@ -1,7 +1,7 @@
 // ##################################################################
 // CrunchyCleaner
 // Made by: Knuspii, (M)
-// Project: https://github.com/knuspii/crunchycleaner
+// Project: https://github.com/Knuspii/CrunchyCleaner
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -40,9 +39,9 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.3"
+	CC_VERSION = "2.4"
 	COLS       = 62
-	LINES      = 30
+	LINES      = 32
 	YELLOW     = "\033[33m"
 	CYAN       = "\033[36m"
 	GREEN      = "\033[32m"
@@ -53,9 +52,9 @@ var (
 	goos                = runtime.GOOS
 	origCols, origLines int
 	// CLI Flags
-	Flagversion = flag.Bool("version", false, "Display version information")
-	Flagnoinit  = flag.Bool("no-init", false, "Skip terminal resizing and environment initialization")
-	Flagdryrun  = flag.Bool("dry-run", false, "Simulation mode without deleting files (for testing)")
+	Flagversion = flag.Bool("v", false, "Display version information")
+	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
+	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
 )
 
 // Program represents a target application and its associated cache directories
@@ -86,8 +85,6 @@ func clearScreen() {
 
 // cc_exit provides a clean termination of the application
 func cc_exit() {
-	fmt.Printf("\nRestoring terminal settings...\n")
-
 	// Close keyboard
 	keyboard.Close()
 
@@ -95,9 +92,11 @@ func cc_exit() {
 	fmt.Print("\033[?25h")
 
 	// Restore size
-	terminalresize(origCols, origLines)
+	if !*Flagnoinit {
+		terminalresize(origCols, origLines)
+	}
 
-	fmt.Printf("Exiting CrunchyCleaner. Goodbye!\n")
+	fmt.Printf("\nExiting CrunchyCleaner. Goodbye!\n")
 	os.Exit(0)
 }
 
@@ -131,29 +130,6 @@ func spinner(text string, stop chan bool, ack chan bool) {
 	}
 }
 
-// runCommand executes a system command and returns the combined stdout and stderr as a string.
-// It trims leading and trailing whitespace from the output.
-func runCommand(cmd []string) (string, error) {
-	// Check if the command slice is empty to avoid index out of range
-	if len(cmd) == 0 {
-		return "", errors.New("command is empty")
-	}
-
-	// Create the command: cmd[0] is the binary, cmd[1:] are the arguments
-	c := exec.Command(cmd[0], cmd[1:]...)
-
-	// Execute and capture both standard output and error streams
-	outBytes, err := c.CombinedOutput()
-	out := strings.TrimSpace(string(outBytes))
-
-	// If an error occurs, return the output (which might contain error details) and the error
-	if err != nil {
-		return out, fmt.Errorf("command execution failed: %w", err)
-	}
-
-	return out, nil
-}
-
 func terminalresize(w int, h int) {
 	// OS-specific Terminal Resizing
 	if goos == "windows" {
@@ -161,7 +137,7 @@ func terminalresize(w int, h int) {
 			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
 			w, h,
 		)
-		runCommand([]string{"powershell", "-NoProfile", "-Command", psCmd})
+		exec.Command("powershell", "-NoProfile", "-Command", psCmd).Run()
 	}
 
 	// Generic ANSI resize fallback for modern terminals
@@ -174,14 +150,19 @@ func initApp() {
 
 	// Get current terminal size
 	if goos == "windows" {
-		out, _ := runCommand([]string{
+		cmd := exec.Command(
 			"powershell", "-NoProfile", "-Command",
 			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
-		})
-		fmt.Sscanf(strings.TrimSpace(out), "%d %d", &origCols, &origLines)
+		)
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
+
 	} else {
-		out, _ := runCommand([]string{"sh", "-c", "stty size < /dev/tty"})
-		fmt.Sscanf(strings.TrimSpace(out), "%d %d", &origLines, &origCols)
+		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
 	}
 
 	// Fetching the current system user
@@ -203,62 +184,6 @@ func initApp() {
 	// Resize terminal
 	terminalresize(COLS, LINES)
 	time.Sleep(1 * time.Second)
-}
-
-// isSafePath checks whether a given path is safe to delete.
-// It prevents dangerous operations like deleting root directories
-// or very short paths that could wipe critical system locations.
-func isSafePath(p string) bool {
-	// Clean the path to resolve ".." and remove double slashes
-	p = filepath.Clean(p)
-	pLower := strings.ToLower(p)
-
-	// Absolute Base Protection: Root Directories
-	if p == "/" || p == "\\" {
-		return false
-	}
-
-	if runtime.GOOS == "windows" {
-		// Block "C:", "C:\", "D:\" etc.
-		if len(p) <= 3 && strings.Contains(p, ":") {
-			return false
-		}
-
-		// Critical Windows System Directories
-		// Even if globbed incorrectly, these hardcoded paths provide a safety net.
-		systemBlacklist := []string{
-			"c:\\windows",
-			"c:\\windows\\system32",
-			"c:\\users",
-			"c:\\program files",
-			"c:\\program files (x86)",
-			"c:\\programdata",
-		}
-		for _, s := range systemBlacklist {
-			if pLower == s {
-				return false
-			}
-		}
-
-		// Prevent deleting the entire User Profile directory
-		userProfile := strings.ToLower(os.Getenv("USERPROFILE"))
-		if pLower == userProfile {
-			return false
-		}
-
-	} else {
-		// Unix/Linux System Blacklist
-		systemBlacklist := []string{
-			"/etc", "/bin", "/sbin", "/lib", "/usr", "/boot", "/root", "/home", "/proc", "/sys", "/dev",
-		}
-		for _, s := range systemBlacklist {
-			if pLower == s {
-				return false
-			}
-		}
-	}
-
-	return true
 }
 
 func getPrograms() []Program {
@@ -312,7 +237,7 @@ func getPrograms() []Program {
 				filepath.Join(programFiles, "Steam/appcache"),
 				filepath.Join(localAppData, "Steam/htmlcache"),
 			}, false},
-			{"Epic Games Cache", []string{filepath.Join(localAppData, "EpicGamesLauncher/Saved/webcache"),}, false},
+			{"Epic Games Cache", []string{filepath.Join(localAppData, "EpicGamesLauncher/Saved/webcache")}, false},
 			{"Discord Cache", []string{
 				filepath.Join(appData, "discord/Cache"),
 				filepath.Join(appData, "discord/Code Cache"),
@@ -362,20 +287,20 @@ func getPrograms() []Program {
 			{"Edge Cache", []string{
 				filepath.Join(home, ".cache/microsoft-edge/*/Cache"),
 				filepath.Join(home, ".cache/microsoft-edge/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
+				filepath.Join(home, ".var/app/com.microsoft.Edge/.cache/microsoft-edge/*/Cache"),
+				filepath.Join(home, ".var/app/com.microsoft.Edge/.cache/microsoft-edge/*/CodeCache"),
 			}, false},
 			{"Brave Cache", []string{
 				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Cache"),
 				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Cache"),
+				filepath.Join(home, ".var/app/com.brave.Browser/.cache/Brave-Browser/*/Cache"),
+				filepath.Join(home, ".var/app/com.brave.Browser/.cache/Brave-Browser/*/Code Cache"),
 			}, false},
 			{"Opera Cache", []string{
 				filepath.Join(home, ".cache/opera/Cache"),
 				filepath.Join(home, ".config/opera/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/cache/opera/*/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/config/opera/*/Cache"),
+				filepath.Join(home, ".var/app/com.opera.Opera/.cache/opera/Cache"),
+				filepath.Join(home, ".var/app/com.opera.Opera/.config/opera/Cache"),
 			}, false},
 			{"Thunderbird Cache", []string{
 				filepath.Join(home, ".cache/thunderbird/*/cache2"),
@@ -399,23 +324,23 @@ func getPrograms() []Program {
 				filepath.Join(home, ".config/discord/Cache"),
 				filepath.Join(home, ".config/discord/Code Cache"),
 				filepath.Join(home, ".config/discord/GPUCache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Code Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/GPUCache"),
+				filepath.Join(home, ".var/app/com.discordapp.Discord/.config/discord/Cache"),
+				filepath.Join(home, ".var/app/com.discordapp.Discord/.config/discord/Code Cache"),
+				filepath.Join(home, ".var/app/com.discordapp.Discord/.config/discord/GPUCache"),
 			}, false},
 			{"Spotify Cache", []string{
 				filepath.Join(home, ".cache/spotify"),
-				filepath.Join(home, ".var/app/com.spotify.Client/cache/spotify"),
+				filepath.Join(home, ".var/app/com.spotify.Client/.cache/spotify"),
 			}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(home, ".config/Code/Cache"),
 				filepath.Join(home, ".config/Code/CachedData"),
 				filepath.Join(home, ".config/Code/GPUCache"),
 				filepath.Join(home, ".config/Code/User/workspaceStorage"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/Cache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/CachedData"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/GPUCache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/user/workspaceStorage"),
+				filepath.Join(home, ".var/app/com.visualstudio.code/.config/Code/Cache"),
+				filepath.Join(home, ".var/app/com.visualstudio.code/.config/Code/CachedData"),
+				filepath.Join(home, ".var/app/com.visualstudio.code/.config/Code/GPUCache"),
+				filepath.Join(home, ".var/app/com.visualstudio.code/.config/Code/user/workspaceStorage"),
 			}, false},
 			{"Mesa Shader Cache", []string{filepath.Join(home, ".cache/mesa_shader_cache")}, false},
 			{"Go Build Cache", []string{filepath.Join(home, ".cache/go-build")}, false},
@@ -668,31 +593,20 @@ func handleMenu() {
 	}
 }
 
-// runCleanup executes the deletion logic (or simulation if dry-run is active)
 func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
-	statusMsg := "Cleaning selected caches"
+	fmt.Printf("\nCleaning caches started...")
 	if *Flagdryrun {
-		statusMsg = "[DRY RUN] Simulating cleanup"
+		fmt.Printf("\n* Dry run active!")
 	}
-
-	fmt.Printf("Cleaning caches started...\n")
-
-	if *Flagdryrun {
-		fmt.Printf("%sNOTE: Dry run active. No files will actually be deleted.%s\n", YELLOW, RC)
-	} else {
-		fmt.Printf("You use this tool at your own risk!\n")
-	}
-
-	fmt.Printf("Press [CTRL+C] to cancel\n")
-	time.Sleep(1 * time.Second)
 
 	stop := make(chan bool)
 	ack := make(chan bool)
-	go spinner(statusMsg, stop, ack)
+	go spinner("Cleaning...", stop, ack)
 
 	count := 0
+
 	for _, p := range programs {
 		if !p.Checked {
 			continue
@@ -700,100 +614,77 @@ func runCleanup(programs []Program) {
 		count++
 
 		for _, path := range p.Paths {
-			// Expand wildcards (e.g., /Profiles/*/cache2)
 			matches, _ := filepath.Glob(expandHome(path))
 
 			for _, m := range matches {
 				if *Flagdryrun {
-					logInfo(fmt.Sprintf("Would empty directory: %s", m))
-				} else {
-					if !isSafePath(m) {
-						logWarn("Skipped unsafe path: " + m)
-						continue
-					}
-
-					// Get file information to check if it's a directory
-					info, err := os.Stat(m)
-					if err != nil {
-						continue
-					}
-
-					if !info.IsDir() {
-						// If it's just a file, delete it directly
-						err := os.Remove(m)
-						if err != nil {
-							logWarn("Could not delete file " + m + ": " + err.Error())
-						}
-					} else {
-						// If it's a directory, read its contents
-						entries, err := os.ReadDir(m)
-						if err != nil {
-							logWarn("Could not read directory " + m + ": " + err.Error())
-							continue
-						}
-
-						// Loop through all files and subfolders inside the directory
-						for _, entry := range entries {
-							fullPath := filepath.Join(m, entry.Name())
-
-							// Delete the entry (file or subfolder)
-							err := os.RemoveAll(fullPath)
-							if err != nil {
-								// Just log the error message provided by the OS
-								// This covers "Permission Denied", "In Use", etc.
-								logWarn(fmt.Sprintf("Skipped %s: %v", entry.Name(), err))
-							}
-						}
-					}
+					logInfo("Would clean: " + m)
+					continue
 				}
+				deletePath(m)
 			}
 		}
 
-		if !*Flagdryrun {
-			// Extract display name without size info
-			displayName := p.Name
-			if idx := strings.Index(p.Name, "  "); idx != -1 {
-				displayName = p.Name[:idx]
-			}
-			logOK("Cleaned " + strings.TrimSpace(displayName))
+		// Cut the size part
+		name := p.Name
+		if idx := strings.Index(name, "("); idx != -1 {
+			name = strings.TrimSpace(name[:idx])
 		}
+		logOK(name)
 	}
-	stop <- true // Tell spinner to stop
-	<-ack        // WAIT for spinner to clear the line
+
+	stop <- true
+	<-ack
+
+	if count == 0 {
+		fmt.Printf("\nNothing selected")
+		return
+	}
 
 	if *Flagdryrun {
-		logOK("Simulation finished. No files were removed.")
+		logOK("Simulation finished")
 	} else {
 		logOK("Cleaning finished")
 	}
 
-	if count == 0 {
-		fmt.Printf("Nothing selected to clean.\n")
-	}
-
-	// Calculate and display space savings
 	afterFree, _, _ := getDiskMetrics()
-
-	// Convert GB difference back to MB for display
-	totalCleanedMB := (afterFree - beforeFree) * 1024
-
-	if totalCleanedMB < 0 || *Flagdryrun {
-		totalCleanedMB = 0
+	cleaned := (afterFree - beforeFree) * 1024
+	if cleaned < 0 || *Flagdryrun {
+		cleaned = 0
 	}
 
 	line()
-	label := "Cleaned"
-	if *Flagdryrun {
-		label = "NOTHING CLEANED (Dry Run)"
-	}
-
-	fmt.Printf(" %s: %s%.2f MB%s\n", label, GREEN, totalCleanedMB, RC)
-	line()
+	fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
 
 	fmt.Printf("\nPress [ENTER] to exit...")
 	keyboard.Close()
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	cc_exit()
+}
+
+func deletePath(path string) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return
+	}
+
+	if !info.IsDir() {
+		_ = os.Remove(path)
+		return
+	}
+
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		logWarn("Cannot read " + path + ": " + err.Error())
+		return
+	}
+
+	for _, e := range entries {
+		full := filepath.Join(path, e.Name())
+		if err := os.RemoveAll(full); err != nil {
+			logWarn("Skipped " + e.Name() + ": " + err.Error())
+		}
+	}
 }
 
 func main() {
