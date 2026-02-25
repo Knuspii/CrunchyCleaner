@@ -56,12 +56,9 @@ Usage:
   crunchycleaner [option]
 
 Options:
-  -dry-run
-        Simulation mode without deleting files (for testing)
-  -no-init
-        Skip terminal resizing and environment initialization
-  -version
-        Display version information
+  -d    Simulation mode without deleting files (for testing)
+  -i    Skip terminal resizing and environment initialization
+  -v    Display version information
 ```
 
 ## Q&A
@@ -73,6 +70,11 @@ Options:
 \
 **Q:** Why another cleaner?\
 **A:** Because this one is easy, simple, small and lightweight.
+
+## Other Downloads
+CrunchyCleaner is also available on SourceForge \
+[![Download CrunchyCleaner](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/crunchycleaner/files/latest/download)
+[![Download CrunchyCleaner](https://img.shields.io/sourceforge/dt/crunchycleaner.svg)](https://sourceforge.net/projects/crunchycleaner/files/latest/download)
 
 ## External Dependencies
 This project uses the following external dependencies:
