@@ -55,6 +55,7 @@ var (
 	Flagversion = flag.Bool("v", false, "Display version information")
 	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
 	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
+	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
 
 // Program represents a target application and its associated cache directories
@@ -340,7 +341,7 @@ func getPrograms() []Program {
 				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/Cache"),
 				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/CachedData"),
 				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/GPUCache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/user/workspaceStorage"),
+				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/User/workspaceStorage"),
 			}, false},
 			{"Mesa Shader Cache", []string{filepath.Join(home, ".cache/mesa_shader_cache")}, false},
 			{"Go Build Cache", []string{filepath.Join(home, ".cache/go-build")}, false},
@@ -436,19 +437,19 @@ func expandHome(path string) string {
 
 func showBanner() {
 	_, total, free := getDiskMetrics()
-	fmt.Printf(`%s  ____________________     .-.
- |  |              |  |    |_|
- |[]|              |[]|    | |
- |  |              |  |    |=|
- |  |              |  |  .=/I\=.
- |  |______________|  | ////V\\\\
- |  |______________|  | |#######|
- |                    | |||||||||
- |     ____________   |
- |    | __      |  |  | %sCrunchyCleaner%s
- |    ||  |     |  |  | Made by: Knuspii, (M)
- |    ||__|     |  |  | Version: %s
- |____|_________|__|__| Disk-Space: %s / %s%s
+	fmt.Printf(`%s ____________________     .-.
+|  |              |  |    |_|
+|[]|              |[]|    | |
+|  |              |  |    |=|
+|  |              |  |  .=/I\=.
+|  |______________|  | ////V\\\\
+|  |______________|  | |#######|
+|                    | |||||||||
+|     ____________   |
+|    | __      |  |  | %sCrunchyCleaner%s
+|    ||  |     |  |  | Made by: Knuspii, (M)
+|    ||__|     |  |  | Version: %s
+|____|_________|__|__| Disk-Space: %s / %s%s
 `, YELLOW, RC, YELLOW, CC_VERSION, free, total, RC)
 	line()
 }
@@ -491,6 +492,29 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 	}
 }
 
+// function to scan which programs actually exist on the disk
+func scanForExisting() []Program {
+	allPrograms := getPrograms()
+	existing := []Program{}
+	for _, p := range allPrograms {
+		found := false
+		var totalSize int64
+		for _, path := range p.Paths {
+			matches, _ := filepath.Glob(expandHome(path))
+			if len(matches) > 0 {
+				found = true
+				totalSize += getDirSize(path)
+			}
+		}
+		if found {
+			// We format the name here so it's ready for both UI and Logs
+			p.Name = fmt.Sprintf("%-30s %s(%s)%s", p.Name, YELLOW, formatMB(totalSize), RC)
+			existing = append(existing, p)
+		}
+	}
+	return existing
+}
+
 // handleMenu manages user input for navigation and selection
 func handleMenu() {
 	clearScreen()
@@ -502,26 +526,8 @@ func handleMenu() {
 	go spinner("Scanning filesystem", stop, ack)
 	time.Sleep(1 * time.Second)
 
-	// Retrieve all known programs and filter only those
-	// whose cache paths actually exist on the system
-	allPrograms := getPrograms()
-	existing := []Program{}
-	for _, p := range allPrograms {
-		var totalSize int64
-		found := false
-		for _, path := range p.Paths {
-			matches, _ := filepath.Glob(expandHome(path))
-			if len(matches) > 0 {
-				found = true
-				totalSize += getDirSize(path) // Calculate size for this program
-			}
-		}
-		if found {
-			// We modify the name slightly to include the size
-			p.Name = fmt.Sprintf("%-30s %s(%s)%s", p.Name, YELLOW, formatMB(totalSize), RC)
-			existing = append(existing, p)
-		}
-	}
+	existing := scanForExisting()
+
 	stop <- true // Tell spinner to stop
 	<-ack        // WAIT for spinner to clear the line
 
@@ -656,9 +662,11 @@ func runCleanup(programs []Program) {
 	line()
 	fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
 
-	fmt.Printf("\nPress [ENTER] to exit...")
-	keyboard.Close()
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	if !*Flagauto {
+		keyboard.Close()
+		fmt.Printf("\nPress [ENTER] to exit...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
 	cc_exit()
 }
 
@@ -707,5 +715,24 @@ func main() {
 		initApp()
 	}
 
-	handleMenu()
+	// AUTOMATION LOGIC
+	if *Flagauto {
+		showBanner()
+		fmt.Printf("Automation mode active: Scanning and selecting all caches...")
+		existing := scanForExisting()
+
+		if len(existing) == 0 {
+			fmt.Printf("\nNo caches found. Nothing to do.")
+			os.Exit(0)
+		}
+
+		// Check all found items
+		for i := range existing {
+			existing[i].Checked = true
+		}
+		runCleanup(existing)
+	} else {
+		// Run interactive mode
+		handleMenu()
+	}
 }
