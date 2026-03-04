@@ -55,6 +55,7 @@ Usage:
   crunchycleaner [option]
 
 Options:
+  -a    Automate cleaning (select all and start immediately)
   -d    Simulation mode without deleting files (for testing)
   -i    Skip terminal resizing and environment initialization
   -v    Display version information
