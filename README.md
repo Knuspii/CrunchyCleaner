@@ -19,7 +19,7 @@
 - 📲 **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
-[![Download](https://img.shields.io/github/downloads/Knuspii/crunchycleaner/total?color=green)](https://github.com/Knuspii/crunchycleaner/releases)
+[![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)](https://github.com/knuspii/crunchycleaner/releases)
 
 ## Supported Software List:
 - System Logs
@@ -43,7 +43,8 @@
 - Yarn Cache
 - Cargo Cache
 
-**Not working with software installed by snap**
+**Flatpak is supported** \
+**Snap is not supported**
 
 > [!WARNING]
 > You use this tool at your own risk!
@@ -60,13 +61,13 @@ Options:
 ```
 
 ## Q&A
-**Q:** Will this break my system?\
+**Q:** Will this break my system? \
 **A:** No.\
 \
-**Q:** What does it actually delete?\
+**Q:** What does it actually delete? \
 **A:** Only cache files and temp files.\
 \
-**Q:** Why another cleaner?\
+**Q:** Why another cleaner? \
 **A:** Because this one is easy, simple, small and lightweight.
 
 ## Other Downloads
