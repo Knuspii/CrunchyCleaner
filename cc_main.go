@@ -437,19 +437,19 @@ func expandHome(path string) string {
 
 func showBanner() {
 	_, total, free := getDiskMetrics()
-	fmt.Printf(`%s ____________________     .-.
-|  |              |  |    |_|
-|[]|              |[]|    | |
-|  |              |  |    |=|
-|  |              |  |  .=/I\=.
-|  |______________|  | ////V\\\\
-|  |______________|  | |#######|
-|                    | |||||||||
-|     ____________   |
-|    | __      |  |  | %sCrunchyCleaner%s
-|    ||  |     |  |  | Made by: Knuspii, (M)
-|    ||__|     |  |  | Version: %s
-|____|_________|__|__| Disk-Space: %s / %s%s
+	fmt.Printf(`%s  ____________________     .-.
+ |   |  |       __ |  \    |_|
+ |   |  |      |  ||  |    | |
+ |   |  |      |__||  |    |=|
+ |   |__|__________|  |  .=/I\=.
+ |                    | ////V\\\\
+ |   ______________   | |#######|
+ |  |______________|  | |||||||||
+ |  |              |  |
+ |  |              |  | %sCrunchyCleaner%s
+ |  |              |  | Made by: Knuspii, (M)
+ |[]|              |[]| Version: %s
+ |__|______________|__| Disk-Space: %s / %s%s
 `, YELLOW, RC, YELLOW, CC_VERSION, free, total, RC)
 	line()
 }
