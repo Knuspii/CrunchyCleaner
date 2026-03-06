@@ -592,7 +592,7 @@ func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
 	if *Flagdryrun {
-		fmt.Printf("%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
+		fmt.Printf("%sNOTE: Dry run active, no files will actually be deleted%s", YELLOW, RC)
 	} else {
 		fmt.Printf("You use this tool at your own risk!")
 	}
@@ -650,7 +650,7 @@ func runCleanup(programs []Program) {
 
 	if count == 0 {
 		fmt.Printf("\nNothing selected")
-		return
+		os.Exit(0)
 	}
 
 	if *Flagdryrun {
@@ -666,11 +666,15 @@ func runCleanup(programs []Program) {
 	}
 
 	line()
-	fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
+	if !*Flagdryrun {
+		fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
+	} else {
+		fmt.Printf("CrunchyCleaner cleaned: Nothing because of dry run\n")
+	}
 
 	if !*Flagauto {
-		keyboard.Close()
 		fmt.Printf("\nPress [ENTER] to exit")
+		keyboard.Close()
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	cc_exit()
@@ -724,11 +728,11 @@ func main() {
 	// AUTOMATION LOGIC
 	if *Flagauto {
 		showBanner()
-		fmt.Printf("%sNOTE: Automation active. Scanning and selecting all caches...%s\n", YELLOW, RC)
+		fmt.Printf("%sNOTE: Automation active, scanning and selecting all caches...%s\n", YELLOW, RC)
 		existing := scanForExisting()
 
 		if len(existing) == 0 {
-			fmt.Printf("\nNo caches found. Nothing to do.")
+			fmt.Printf("\nNo caches found, nothing to do")
 			os.Exit(0)
 		}
 
