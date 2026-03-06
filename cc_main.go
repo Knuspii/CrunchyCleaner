@@ -42,6 +42,7 @@ const (
 	CC_VERSION = "2.4"
 	COLS       = 62
 	LINES      = 32
+	GOOS       = runtime.GOOS
 	YELLOW     = "\033[33m"
 	CYAN       = "\033[36m"
 	GREEN      = "\033[32m"
@@ -49,7 +50,6 @@ const (
 )
 
 var (
-	goos                = runtime.GOOS
 	origCols, origLines int
 	// CLI Flags
 	Flagversion = flag.Bool("v", false, "Display version information")
@@ -69,13 +69,16 @@ type Program struct {
 
 // clearScreen handles cross-platform terminal clearing
 func clearScreen() {
-	if goos == "windows" {
+	if *Flagnoinit {
+		return
+	}
+	if GOOS == "windows" {
 		// Windows CMD requires an external call to 'cls'
 		cmd := exec.Command("cmd", "/c", "cls")
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 	} else {
-		cmd := exec.Command("bash", "-c", "clear")
+		cmd := exec.Command("sh", "-c", "clear")
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 
@@ -97,7 +100,7 @@ func cc_exit() {
 		terminalresize(origCols, origLines)
 	}
 
-	fmt.Printf("\nExiting CrunchyCleaner. Goodbye!\n")
+	fmt.Printf("\nExiting CrunchyCleaner...\n")
 	os.Exit(0)
 }
 
@@ -133,7 +136,7 @@ func spinner(text string, stop chan bool, ack chan bool) {
 
 func terminalresize(w int, h int) {
 	// OS-specific Terminal Resizing
-	if goos == "windows" {
+	if GOOS == "windows" {
 		psCmd := fmt.Sprintf(
 			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
 			w, h,
@@ -150,7 +153,7 @@ func initApp() {
 	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
 
 	// Get current terminal size
-	if goos == "windows" {
+	if GOOS == "windows" {
 		cmd := exec.Command(
 			"powershell", "-NoProfile", "-Command",
 			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
@@ -164,20 +167,6 @@ func initApp() {
 
 		out, _ := cmd.Output()
 		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
-	}
-
-	// Fetching the current system user
-	usr, err := user.Current()
-	if err != nil {
-		fmt.Printf("Username: unknown\n")
-	} else {
-		name := usr.Username
-		// Strip domain/machine name prefix on Windows
-		if goos == "windows" && strings.Contains(name, "\\") {
-			parts := strings.Split(name, "\\")
-			name = parts[len(parts)-1]
-		}
-		fmt.Printf("Username: %s\n", name)
 	}
 
 	// Set Terminal Title via ANSI sequence
@@ -359,7 +348,7 @@ func getDiskMetrics() (freeGB float64, totalStr string, freeStr string) {
 	totalStr = "N/A"
 	freeStr = "N/A"
 
-	if goos == "windows" {
+	if GOOS == "windows" {
 		// We use a single PowerShell command to get both values to reduce overhead
 		cmdArgs := []string{
 			"powershell", "-NoProfile", "-Command",
@@ -533,7 +522,7 @@ func handleMenu() {
 
 	// Abort if nothing was detected
 	if len(existing) == 0 {
-		fmt.Printf("No cache directories found on your system.\n")
+		fmt.Printf("\nNo cache directories found on your system")
 		pause()
 		return
 	}
@@ -602,14 +591,31 @@ func handleMenu() {
 func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
-	fmt.Printf("\nCleaning caches started...")
 	if *Flagdryrun {
-		fmt.Printf("\n* Dry run active!")
+		fmt.Printf("%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
+	} else {
+		fmt.Printf("You use this tool at your own risk!")
 	}
+	// Fetching the current system user
+	usr, err := user.Current()
+	if err != nil {
+		fmt.Printf("\nUsername: unknown")
+	} else {
+		name := usr.Username
+		// Strip domain/machine name prefix on Windows
+		if GOOS == "windows" && strings.Contains(name, "\\") {
+			parts := strings.Split(name, "\\")
+			name = parts[len(parts)-1]
+		}
+		fmt.Printf("\nUsername: %s", name)
+	}
+	fmt.Printf("\nPress [CTRL+C] to cancel")
+	fmt.Printf("\nCleaning caches started...\n")
 
 	stop := make(chan bool)
 	ack := make(chan bool)
-	go spinner("Cleaning...", stop, ack)
+	go spinner("Cleaning selected caches", stop, ack)
+	time.Sleep(3 * time.Second)
 
 	count := 0
 
@@ -664,7 +670,7 @@ func runCleanup(programs []Program) {
 
 	if !*Flagauto {
 		keyboard.Close()
-		fmt.Printf("\nPress [ENTER] to exit...")
+		fmt.Printf("\nPress [ENTER] to exit")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	cc_exit()
@@ -718,7 +724,7 @@ func main() {
 	// AUTOMATION LOGIC
 	if *Flagauto {
 		showBanner()
-		fmt.Printf("Automation mode active: Scanning and selecting all caches...")
+		fmt.Printf("%sNOTE: Automation active. Scanning and selecting all caches...%s\n", YELLOW, RC)
 		existing := scanForExisting()
 
 		if len(existing) == 0 {
