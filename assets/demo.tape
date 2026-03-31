@@ -1,9 +1,10 @@
 # Output settings
 Output crunchycleaner-demo.gif
-Set FontSize 15
+Set FontSize 17
 Set Width 1200
 Set Height 600
 Set TypingSpeed 100ms
+Set Padding 10
 Set WindowBar Colorful
 
 Hide
