@@ -39,7 +39,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.4"
+	CC_VERSION = "2.5"
 	COLS       = 62
 	LINES      = 32
 	GOOS       = runtime.GOOS
@@ -55,7 +55,7 @@ var (
 	Flagversion = flag.Bool("v", false, "Display version information")
 	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
 	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
-	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
+	Flagauto    = flag.Bool("d", false, "Automate cleaning (select all and start immediately)")
 )
 
 // Program represents a target application and its associated cache directories
@@ -260,83 +260,85 @@ func getPrograms() []Program {
 	} else {
 		// Linux
 		home, _ := os.UserHomeDir()
+		cache := ".cache/"
+		flatpak := ".var/app/"
 		return []Program{
 			{"System Logs (Root)", []string{"/var/log/*.log"}, false},
 			{"System Temp Folders (Root)", []string{"/tmp"}, false},
-			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
+			{"Thumbnail Cache", []string{filepath.Join(home, cache, "thumbnails")}, false},
 			{"Firefox Cache", []string{
-				filepath.Join(home, ".cache/mozilla/firefox/*/cache2"),
-				filepath.Join(home, ".var/app/org.mozilla.firefox/cache/mozilla/firefox/*/cache2"),
+				filepath.Join(home, cache, "mozilla/firefox/*/cache2"),
+				filepath.Join(home, flatpak, "org.mozilla.firefox/cache/mozilla/firefox/*/cache2"),
 			}, false},
 			{"Chromium Cache", []string{
-				filepath.Join(home, ".cache/chromium/*/Cache"),
-				filepath.Join(home, ".cache/chromium/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.google.Chrome/cache/chromium/*/Cache"),
-				filepath.Join(home, ".var/app/com.google.Chrome/cache/chromium/*/CodeCache"),
+				filepath.Join(home, cache, "chromium/*/Cache"),
+				filepath.Join(home, cache, "chromium/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.google.Chrome/cache/chromium/*/Cache"),
+				filepath.Join(home, flatpak, "com.google.Chrome/cache/chromium/*/CodeCache"),
 			}, false},
 			{"Edge Cache", []string{
-				filepath.Join(home, ".cache/microsoft-edge/*/Cache"),
-				filepath.Join(home, ".cache/microsoft-edge/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
+				filepath.Join(home, cache, "microsoft-edge/*/Cache"),
+				filepath.Join(home, cache, "microsoft-edge/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.microsoft.Edge/cache/microsoft-edge/*/Cache"),
+				filepath.Join(home, flatpak, "com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
 			}, false},
 			{"Brave Cache", []string{
-				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Cache"),
-				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Code Cache"),
+				filepath.Join(home, cache, "/BraveSoftware/Brave-Browser/*/Cache"),
+				filepath.Join(home, cache, "/BraveSoftware/Brave-Browser/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Cache"),
+				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Code Cache"),
 			}, false},
 			{"Opera Cache", []string{
-				filepath.Join(home, ".cache/opera/Cache"),
+				filepath.Join(home, cache, "opera/Cache"),
 				filepath.Join(home, ".config/opera/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/cache/opera/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/config/opera/Cache"),
+				filepath.Join(home, flatpak, "com.opera.Opera/cache/opera/Cache"),
+				filepath.Join(home, flatpak, ".com.opera.Opera/config/opera/Cache"),
 			}, false},
 			{"Thunderbird Cache", []string{
-				filepath.Join(home, ".cache/thunderbird/*/cache2"),
-				filepath.Join(home, ".var/app/org.mozilla.Thunderbird/cache/mozilla/Thunderbird/*/cache2"),
+				filepath.Join(home, cache, "thunderbird/*/cache2"),
+				filepath.Join(home, flatpak, "org.mozilla.Thunderbird/cache/mozilla/Thunderbird/*/cache2"),
 			}, false},
 			{"Steam Cache", []string{
 				filepath.Join(home, ".steam/steam/appcache"),
 				filepath.Join(home, ".local/share/Steam/appcache"),
 				filepath.Join(home, ".local/share/Steam/config/htmlcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/steam/steam/appcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/.local/share/Steam/appcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/.local/share/Steam/config/htmlcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/steam/steam/appcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/appcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/config/htmlcache"),
 			}, false},
 			{"Epic Games (Heroic/Lutris) Cache", []string{
 				filepath.Join(home, ".config/heroic/WebCache"),
 				filepath.Join(home, ".local/share/lutris/runtime"),
-				filepath.Join(home, ".var/app/com.heroicgameslauncher.hgl/config/heroic/WebCache"),
-				filepath.Join(home, ".var/app/com.heroicgameslauncher.hgl/.local/share/lutris/runtime"),
+				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/config/heroic/WebCache"),
+				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/.local/share/lutris/runtime"),
 			}, false},
 			{"Discord Cache", []string{
 				filepath.Join(home, ".config/discord/Cache"),
 				filepath.Join(home, ".config/discord/Code Cache"),
 				filepath.Join(home, ".config/discord/GPUCache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Code Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/GPUCache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Cache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Code Cache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/GPUCache"),
 			}, false},
 			{"Spotify Cache", []string{
-				filepath.Join(home, ".cache/spotify"),
-				filepath.Join(home, ".var/app/com.spotify.Client/cache/spotify"),
+				filepath.Join(home, cache, "spotify"),
+				filepath.Join(home, flatpak, "com.spotify.Client/cache/spotify"),
 			}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(home, ".config/Code/Cache"),
 				filepath.Join(home, ".config/Code/CachedData"),
 				filepath.Join(home, ".config/Code/GPUCache"),
 				filepath.Join(home, ".config/Code/User/workspaceStorage"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/Cache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/CachedData"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/GPUCache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/User/workspaceStorage"),
+				filepath.Join(home, flatpak, ".com.visualstudio.code/config/Code/Cache"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/CachedData"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/GPUCache"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/User/workspaceStorage"),
 			}, false},
-			{"Mesa Shader Cache", []string{filepath.Join(home, ".cache/mesa_shader_cache")}, false},
-			{"Go Build Cache", []string{filepath.Join(home, ".cache/go-build")}, false},
-			{"Pip Cache", []string{filepath.Join(home, ".cache/pip")}, false},
+			{"Mesa Shader Cache", []string{filepath.Join(home, cache, "mesa_shader_cache")}, false},
+			{"Go Build Cache", []string{filepath.Join(home, cache, "go-build")}, false},
+			{"Pip Cache", []string{filepath.Join(home, cache, "pip")}, false},
 			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
-			{"Yarn Cache", []string{filepath.Join(home, ".cache/yarn")}, false},
+			{"Yarn Cache", []string{filepath.Join(home, cache, "yarn")}, false},
 			{"Cargo Cache", []string{filepath.Join(home, ".cargo/registry/cache")}, false},
 		}
 	}
@@ -592,7 +594,7 @@ func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
 	if *Flagdryrun {
-		fmt.Printf("%sNOTE: Dry run active, no files will actually be deleted%s", YELLOW, RC)
+		fmt.Printf("%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
 	} else {
 		fmt.Printf("You use this tool at your own risk!")
 	}
@@ -650,7 +652,7 @@ func runCleanup(programs []Program) {
 
 	if count == 0 {
 		fmt.Printf("\nNothing selected")
-		os.Exit(0)
+		return
 	}
 
 	if *Flagdryrun {
@@ -666,15 +668,11 @@ func runCleanup(programs []Program) {
 	}
 
 	line()
-	if !*Flagdryrun {
-		fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
-	} else {
-		fmt.Printf("CrunchyCleaner cleaned: Nothing because of dry run\n")
-	}
+	fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
 
 	if !*Flagauto {
-		fmt.Printf("\nPress [ENTER] to exit")
 		keyboard.Close()
+		fmt.Printf("\nPress [ENTER] to exit")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	cc_exit()
@@ -728,11 +726,11 @@ func main() {
 	// AUTOMATION LOGIC
 	if *Flagauto {
 		showBanner()
-		fmt.Printf("%sNOTE: Automation active, scanning and selecting all caches...%s\n", YELLOW, RC)
+		fmt.Printf("%sNOTE: Automation active. Scanning and selecting all caches...%s\n", YELLOW, RC)
 		existing := scanForExisting()
 
 		if len(existing) == 0 {
-			fmt.Printf("\nNo caches found, nothing to do")
+			fmt.Printf("\nNo caches found. Nothing to do.")
 			os.Exit(0)
 		}
 

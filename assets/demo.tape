@@ -12,8 +12,7 @@ Hide
 Show
 
 # --- Start the TUI ---
-Type "crunchycleaner -d"
-Sleep 500ms
+Type "crunchycleaner -d # This is a test run!"
 Enter
 Sleep 2s # Wait for the TUI to render
 
@@ -28,12 +27,11 @@ Sleep 1s
 Type " "
 Down @ 500ms
 Type " "
-Sleep 2s
+Down @ 500ms
+Sleep 1s
 Type "a"
 Sleep 2s
 Type "c"
 Sleep 5s
-
-# --- Exit ---
 Enter @ 500ms
-Sleep 3s
+
