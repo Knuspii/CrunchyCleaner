@@ -10,7 +10,7 @@
 
 <div align="center">
 <h1>CrunchyCleaner <img src="assets/logo.png" width="64" height="64" alt="Logo"></h1>
-<img src="assets/preview.png" width="400" height="400" alt="Preview">
+<img src="assets/crunchycleaner-demo.gif" width="1000" height="1000" alt="Preview">
 </div>
 
 ### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
@@ -20,34 +20,23 @@
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 [![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)](https://github.com/knuspii/crunchycleaner/releases)
+Or
+```
+go install github.com/Knuspii/CrunchyCleaner@latest
+```
 
 ## Supported Software List:
-- System Logs
-- System Temp Folders
-- Thumbnail Cache
-- Firefox
-- Google Chrome
-- Microsoft Edge
-- Brave
-- Opera
-- Thunderbird
-- Steam
-- Epic Games
-- Discord
-- Spotify
-- Visual Studio Code
-- DirectX Shader Cache
-- Go Build Cache
-- Pip Cache
-- NPM Cache
-- Yarn Cache
-- Cargo Cache
+| Category | Software / Path |
+| :--- | :--- |
+| **System** | System Logs, System Temp Folders, Thumbnail Cache, DirectX Shader Cache |
+| **Browsers** | Firefox, Google Chrome, Microsoft Edge, Brave, Opera |
+| **Development** | Visual Studio Code, Go Cache, Pip Cache, NPM Cache, Yarn Cache, Cargo Cache |
+| **Server** | coming soon* |
+| **Gaming** | Steam, Epic Games(Heroic) |
+| **Apps** | Discord, Spotify, Thunderbird |
 
 **Flatpak is supported** \
 **Snap is not supported**
-
-> [!WARNING]
-> You use this tool at your own risk!
 
 ## ⚙️ Start options:
 ```
@@ -60,6 +49,10 @@ Options:
   -i    Skip terminal resizing and environment initialization
   -v    Display version information
 ```
+
+
+> [!WARNING]
+> You use this tool at your own risk!
 
 ## Q&A
 **Q:** Will this break my system? \
