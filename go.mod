@@ -1,4 +1,4 @@
-module github.com/knuspii/crunchycleaner
+module github.com/Knuspii/CrunchyCleaner
 
 go 1.25.0
 
