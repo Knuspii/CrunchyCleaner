@@ -55,7 +55,7 @@ var (
 	Flagversion = flag.Bool("v", false, "Display version information")
 	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
 	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
-	Flagauto    = flag.Bool("d", false, "Automate cleaning (select all and start immediately)")
+	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
 
 // Program represents a target application and its associated cache directories
@@ -65,7 +65,7 @@ type Program struct {
 	Checked bool     // Selection state in the menu
 }
 
-// --- Helper Functions ---
+// ========================= HELPER FUNCTIONS =========================
 
 // clearScreen handles cross-platform terminal clearing
 func clearScreen() {
@@ -94,6 +94,11 @@ func cc_exit() {
 
 	// Enable cursor
 	fmt.Print("\033[?25h")
+
+	// Main Screen Buffer
+	if !*Flagnoinit {
+		fmt.Print("\033[?1049l")
+	}
 
 	// Restore size
 	if !*Flagnoinit {
@@ -148,9 +153,14 @@ func terminalresize(w int, h int) {
 	fmt.Printf("\033[8;%d;%dt", h, w)
 }
 
-// initApp prepares the terminal environment (Title, Resize, User Info)
+// initApp prepares the terminal environment (Title, Resize)
 func initApp() {
 	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
+
+	// Alternate Screen Buffer
+	if !*Flagnoinit {
+		fmt.Print("\033[?1049h")
+	}
 
 	// Get current terminal size
 	if GOOS == "windows" {
@@ -171,10 +181,12 @@ func initApp() {
 
 	// Set Terminal Title via ANSI sequence
 	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
+
 	// Resize terminal
 	terminalresize(COLS, LINES)
-	time.Sleep(1 * time.Second)
 }
+
+// ========================= PROGRAMS =========================
 
 func getPrograms() []Program {
 	if runtime.GOOS == "windows" {
@@ -190,6 +202,7 @@ func getPrograms() []Program {
 				filepath.Join(winDir, "Panther"),
 				filepath.Join(winDir, "Logs"),
 			}, false},
+			{"Font Cache (Admin)", []string{filepath.Join(winDir, "ServiceProfiles/LocalService/AppData/Local/FontCache")}, false},
 			{"System Temp Folders (Admin)", []string{filepath.Join(winDir, "Temp")}, false},
 			{"Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
 			{"User Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
@@ -233,6 +246,7 @@ func getPrograms() []Program {
 				filepath.Join(appData, "discord/Code Cache"),
 				filepath.Join(appData, "discord/GPUCache"),
 			}, false},
+			{"Telegram Cache", []string{filepath.Join(appData, "Telegram Desktop/tdata/user_data/cache")}, false},
 			{"Spotify Cache", []string{filepath.Join(localAppData, "Spotify/Storage")}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(appData, "Code/Cache"),
@@ -283,8 +297,8 @@ func getPrograms() []Program {
 				filepath.Join(home, flatpak, "com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
 			}, false},
 			{"Brave Cache", []string{
-				filepath.Join(home, cache, "/BraveSoftware/Brave-Browser/*/Cache"),
-				filepath.Join(home, cache, "/BraveSoftware/Brave-Browser/*/Code Cache"),
+				filepath.Join(home, cache, "BraveSoftware/Brave-Browser/*/Cache"),
+				filepath.Join(home, cache, "BraveSoftware/Brave-Browser/*/Code Cache"),
 				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Cache"),
 				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Code Cache"),
 			}, false},
@@ -319,6 +333,10 @@ func getPrograms() []Program {
 				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Cache"),
 				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Code Cache"),
 				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/GPUCache"),
+			}, false},
+			{"Telegram Cache", []string{filepath.Join(
+				home, ".local/share/TelegramDesktop/tdata/user_data/cache"),
+				filepath.Join(home, flatpak, "org.telegram.desktop/data/TelegramDesktop/tdata/user_data/cache"),
 			}, false},
 			{"Spotify Cache", []string{
 				filepath.Join(home, cache, "spotify"),
@@ -424,7 +442,7 @@ func expandHome(path string) string {
 	return path
 }
 
-// --- Menu UI Logic ---
+// ========================= MENU UI LOGIC =========================
 
 func showBanner() {
 	_, total, free := getDiskMetrics()
