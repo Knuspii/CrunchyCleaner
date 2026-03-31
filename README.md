@@ -1,10 +1,9 @@
 <p align="center">
-  <a href="https://go.dev/"><img src="https://img.shields.io/static/v1?label=Made%20with&message=Go&logo=go&color=007ACC" alt="Golang" /></a>
+  <img src="https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg" />
   <a href="https://goreportcard.com/report/github.com/knuspii/crunchycleaner"><img src="https://goreportcard.com/badge/github.com/knuspii/crunchycleaner" alt="Go Report Card" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml"><img src="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml/badge.svg" alt="Build" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/stargazers"><img src="https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social" alt="GitHub Stars" /></a>
   <br>
-  <img src="https://img.shields.io/github/license/knuspii/crunchycleaner" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?logo=linux&logoColor=white" alt="Platform" />
 </p>
 
@@ -13,13 +12,14 @@
 <img src="assets/crunchycleaner-demo.gif" width="1000" height="1000" alt="Preview">
 </div>
 
-### ✨ A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
-- 💻 **Cross-Platform:** Works on both **Windows** and **Linux**
-- ⚡ **Lightweight:** Single binary, no dependencies (just download and run it)
-- 📲 **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
+### 🧹 A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
+- **Cross-Platform:** Works on both **Windows** and **Linux**
+- **Lightweight:** Single binary, no dependencies (just download and run it)
+- **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
 
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 [![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)](https://github.com/knuspii/crunchycleaner/releases)
+
 Or
 ```
 go install github.com/Knuspii/CrunchyCleaner@latest
@@ -37,19 +37,6 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 
 **Flatpak is supported** \
 **Snap is not supported**
-
-## ⚙️ Start options:
-```
-Usage:
-  crunchycleaner [option]
-
-Options:
-  -a    Automate cleaning (select all and start immediately)
-  -d    Simulation mode without deleting files (for testing)
-  -i    Skip terminal resizing and environment initialization
-  -v    Display version information
-```
-
 
 > [!WARNING]
 > You use this tool at your own risk!
@@ -72,3 +59,5 @@ CrunchyCleaner is also available on SourceForge \
 ## External Dependencies
 This project uses the following external dependencies:
 - **[github.com/eiannone/keyboard](https://github.com/eiannone/keyboard)** – used for cross-platform keyboard input (MIT License)
+
+> AI was used for this project in some parts.
