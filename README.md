@@ -13,6 +13,7 @@
 </div>
 
 ### 🧹 A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
+> Made by: Knuspii, (M)
 - **Cross-Platform:** Works on both **Windows** and **Linux**
 - **Lightweight:** Single binary, no dependencies (just download and run it)
 - **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
