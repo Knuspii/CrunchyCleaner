@@ -16,6 +16,8 @@ echo Formatting Go source files...
 gofmt -s -w ..\.
 echo Formatting done.
 
+mkdir ..\bin\
+
 echo Building CrunchyCleaner for Windows amd64...
 set CGO_ENABLED=0
 set GOOS=windows
