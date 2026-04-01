@@ -36,13 +36,13 @@
 
 ## 📥 How to Install & Download
 Paste this into your terminal. \
-Linux:
+Linux (using sudo):
 ```
 curl -sSL https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/scripts/install.sh | sudo bash
 ```
-Windows (using Powershell):
+Windows (using Powershell as Admin):
 ```
-iwr -useb https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/install.bat | iex
+iwr -useb https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/scripts/install.bat | iex
 ```
 Or using Golang:
 ```
