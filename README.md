@@ -25,6 +25,11 @@ Or
 go install github.com/Knuspii/CrunchyCleaner@latest
 ```
 
+## 🎖️ Featured on
+[![Awesome TUIs](https://img.shields.io/badge/Awesome-TUIs-orange?style=flat-square)](https://github.com/rothgar/awesome-tuis)
+[![Awesome Go](https://img.shields.io/badge/Awesome-Go-blue?style=flat-square)](https://github.com/avelino/awesome-go)
+[![Awesome Windows](https://img.shields.io/badge/Awesome-Windows-blueviiet?style=flat-square)](https://github.com/0PandaDEV/awesome-windows)
+
 ## Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
@@ -40,6 +45,9 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 
 > [!WARNING]
 > You use this tool at your own risk!
+
+> [!NOTE]
+> AI was used for this project in some parts.
 
 ## Q&A
 **Q:** Will this break my system? \
@@ -59,5 +67,3 @@ CrunchyCleaner is also available on SourceForge \
 ## External Dependencies
 This project uses the following external dependencies:
 - **[github.com/eiannone/keyboard](https://github.com/eiannone/keyboard)** – used for cross-platform keyboard input (MIT License)
-
-> AI was used for this project in some parts.
