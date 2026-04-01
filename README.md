@@ -4,6 +4,7 @@
   <a href="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml"><img src="https://github.com/knuspii/crunchycleaner/actions/workflows/go.yml/badge.svg" alt="Build" /></a>
   <a href="https://github.com/knuspii/crunchycleaner/stargazers"><img src="https://img.shields.io/github/stars/knuspii/crunchycleaner?style=social" alt="GitHub Stars" /></a>
   <br>
+  <img src="https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green?" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?logo=linux&logoColor=white" alt="Platform" />
 </p>
 
@@ -20,22 +21,7 @@
 
 ---
 
-## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
-[![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)](https://github.com/knuspii/crunchycleaner/releases)
-
-Or
-```
-go install github.com/Knuspii/CrunchyCleaner@latest
-```
-
-## 🎖️ Featured on
-[![Awesome TUIs](https://img.shields.io/badge/Awesome-TUIs-orange?style=flat-square)](https://github.com/rothgar/awesome-tuis)
-[![Awesome Go](https://img.shields.io/badge/Awesome-Go-blue?style=flat-square)](https://github.com/avelino/awesome-go)
-[![Awesome Windows](https://img.shields.io/badge/Awesome-Windows-blueviiet?style=flat-square)](https://github.com/0PandaDEV/awesome-windows)
-
----
-
-## Supported Software List:
+### Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
 | **System** | System Logs, System Temp Folders, Thumbnail Cache, Shader Cache |
@@ -47,6 +33,30 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 
 **Flatpak is supported** \
 **Snap is not supported**
+
+## 📥 How to Install & Download
+Paste this into your terminal. \
+Linux:
+```
+curl -sSL https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/scripts/install.sh | sudo bash
+```
+Windows (using Powershell):
+```
+iwr -useb https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/install.bat | iex
+```
+Or using Golang:
+```
+go install github.com/Knuspii/CrunchyCleaner@latest
+```
+Download binary:
+[[Download here]](https://github.com/knuspii/crunchycleaner/releases)
+
+### 🎖️ Featured on
+[![Awesome TUIs](https://img.shields.io/badge/Awesome-TUIs-orange?style=flat-square)](https://github.com/rothgar/awesome-tuis)
+[![Awesome Go](https://img.shields.io/badge/Awesome-Go-blue?style=flat-square)](https://github.com/avelino/awesome-go)
+[![Awesome Windows](https://img.shields.io/badge/Awesome-Windows-blueviiet?style=flat-square)](https://github.com/0PandaDEV/awesome-windows)
+
+---
 
 ## Options:
 ```
@@ -79,6 +89,6 @@ CrunchyCleaner is also available on SourceForge \
 [![Download CrunchyCleaner](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/crunchycleaner/files/latest/download)
 [![Download CrunchyCleaner](https://img.shields.io/sourceforge/dt/crunchycleaner.svg)](https://sourceforge.net/projects/crunchycleaner/files/latest/download)
 
-## External Dependencies
+### External Dependencies
 This project uses the following external dependencies:
 - **[github.com/eiannone/keyboard](https://github.com/eiannone/keyboard)** – used for cross-platform keyboard input (MIT License)
