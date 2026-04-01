@@ -37,12 +37,12 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 ## Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
-| **System** | System Logs, System Temp Folders, Thumbnail Cache, DirectX Shader Cache |
+| **System** | System Logs, System Temp Folders, Thumbnail Cache, Shader Cache |
 | **Browsers** | Firefox, Google Chrome, Microsoft Edge, Brave, Opera |
 | **Development** | Visual Studio Code, Go Cache, Pip Cache, NPM Cache, Yarn Cache, Cargo Cache |
 | **Server** | coming soon* |
 | **Gaming** | Steam, Epic Games(Heroic) |
-| **Apps** | Discord, Spotify, Thunderbird |
+| **Apps** | Discord, Spotify, Thunderbird, Telegram |
 
 **Flatpak is supported** \
 **Snap is not supported**
@@ -51,9 +51,11 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 ```
   -a    Automate cleaning (select all and start immediately)
   -d    Simulation mode without deleting files (for testing)
-  -i    Skip terminal resizing and environment initialization
+  -t    Skip terminal resizing and environment initialization
   -v    Display version information
 ```
+
+---
 
 > [!WARNING]
 > You use this tool at your own risk!
