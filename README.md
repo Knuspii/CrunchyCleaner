@@ -34,15 +34,15 @@
 **Flatpak is supported** \
 **Snap is not supported**
 
-## 📥 How to Install & Download
+## 📥 How to Install & Download ![Download](https://img.shields.io/github/downloads/Knuspii/crunchycleaner/total?color=green)
 Paste this into your terminal. \
 Linux (using sudo):
 ```
-curl -sSL https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/scripts/install.sh | sudo bash
+curl -L https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner -o cc && sudo install -m 755 cc /usr/local/bin/crunchycleaner && rm cc
 ```
 Windows (using Powershell as Admin):
 ```
-iwr -useb https://raw.githubusercontent.com/Knuspii/CrunchyCleaner/main/scripts/install.bat | iex
+iwr https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner.exe -OutFile cc.exe; mv -Force cc.exe $env:SystemRoot\System32\crunchycleaner.exe
 ```
 Or using Golang:
 ```
