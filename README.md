@@ -17,6 +17,8 @@
 - **Lightweight:** Single binary, no dependencies (just download and run it)
 - **TUI (Text-UI):** Simple, minimalist interface, no confusing menus
 
+---
+
 ## 📥 [[Download here]](https://github.com/knuspii/crunchycleaner/releases) <- Click here to download CrunchyCleaner!
 [![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)](https://github.com/knuspii/crunchycleaner/releases)
 
@@ -30,6 +32,8 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 [![Awesome Go](https://img.shields.io/badge/Awesome-Go-blue?style=flat-square)](https://github.com/avelino/awesome-go)
 [![Awesome Windows](https://img.shields.io/badge/Awesome-Windows-blueviiet?style=flat-square)](https://github.com/0PandaDEV/awesome-windows)
 
+---
+
 ## Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
@@ -42,6 +46,14 @@ go install github.com/Knuspii/CrunchyCleaner@latest
 
 **Flatpak is supported** \
 **Snap is not supported**
+
+## Options:
+```
+  -a    Automate cleaning (select all and start immediately)
+  -d    Simulation mode without deleting files (for testing)
+  -i    Skip terminal resizing and environment initialization
+  -v    Display version information
+```
 
 > [!WARNING]
 > You use this tool at your own risk!
