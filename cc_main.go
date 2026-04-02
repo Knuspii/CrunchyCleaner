@@ -355,50 +355,35 @@ func getPrograms() []Program {
 }
 
 // getDiskMetrics calculates total and free space for the root/system drive
-func getDiskMetrics() (freeGB float64, totalStr string, freeStr string) {
-	// Default values if something fails
-	totalStr = "N/A"
-	freeStr = "N/A"
+func getDiskMetrics() (freeGB float64, totalStr, freeStr string) {
+	totalStr, freeStr = "N/A", "N/A"
+	const GB = 1024 * 1024 * 1024
 
+	cmd := "sh -c \"df -B1 --output=size,avail / | tail -1\""
 	if GOOS == "windows" {
-		// We use a single PowerShell command to get both values to reduce overhead
-		cmdArgs := []string{
-			"powershell", "-NoProfile", "-Command",
-			"(Get-PSDrive C | Select-Object Used, Free) | ForEach-Object { \"$($_.Used) $($_.Free)\" }",
-		}
-		out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
-
-		if err == nil {
-			parts := strings.Fields(string(out))
-			if len(parts) >= 2 {
-				used, _ := strconv.ParseFloat(parts[0], 64)
-				free, _ := strconv.ParseFloat(parts[1], 64)
-
-				totalGB := (used + free) / 1024 / 1024 / 1024
-				freeGB = free / 1024 / 1024 / 1024
-
-				totalStr = fmt.Sprintf("%.2f GB", totalGB)
-				freeStr = fmt.Sprintf("%.2f GB", freeGB)
-			}
-		}
-	} else {
-		// Standard Unix 'df' command
-		// -B1 ensures output in bytes for better precision before converting to GB
-		out, err := exec.Command("sh", "-c", "df -B1 --output=size,avail / | tail -1").Output()
-
-		if err == nil {
-			parts := strings.Fields(string(out))
-			if len(parts) >= 2 {
-				totalBytes, _ := strconv.ParseFloat(parts[0], 64)
-				freeBytes, _ := strconv.ParseFloat(parts[1], 64)
-
-				freeGB = freeBytes / 1024 / 1024 / 1024
-				totalStr = fmt.Sprintf("%.2f GB", totalBytes/1024/1024/1024)
-				freeStr = fmt.Sprintf("%.2f GB", freeGB)
-			}
-		}
+		cmd = "powershell -NoProfile -Command \"(Get-PSDrive C).Used, (Get-PSDrive C).Free\""
 	}
-	return freeGB, totalStr, freeStr
+
+	out, err := exec.Command("sh", "-c", cmd).Output() // Note: Windows braucht hier exec.Command("powershell", ...)
+	if GOOS == "windows" {
+		out, err = exec.Command("powershell", "-C", cmd).Output()
+	}
+
+	parts := strings.Fields(string(out))
+	if err == nil && len(parts) >= 2 {
+		v1, _ := strconv.ParseFloat(parts[0], 64)
+		v2, _ := strconv.ParseFloat(parts[1], 64)
+
+		if GOOS == "windows" {
+			freeGB = v2 / GB
+			totalStr = fmt.Sprintf("%.2f GB", (v1+v2)/GB)
+		} else {
+			freeGB = v2 / GB
+			totalStr = fmt.Sprintf("%.2f GB", v1/GB)
+		}
+		freeStr = fmt.Sprintf("%.2f GB", freeGB)
+	}
+	return
 }
 
 // formatMB converts bytes to a string representing Megabytes
@@ -455,17 +440,9 @@ func showBanner() {
 	line()
 }
 
-func logInfo(msg string) {
-	fmt.Printf("\r\033[K%s[+] %s%s\n", CYAN, msg, RC)
-}
-
-func logWarn(msg string) {
-	fmt.Printf("\r\033[K\033[33m[!] %s%s\n", msg, RC)
-}
-
-func logOK(msg string) {
-	fmt.Printf("\r\033[K\033[32m[✓] %s%s\n", msg, RC)
-}
+func logInfo(msg string) { fmt.Printf("%s[+] %s%s\n", CYAN, msg, RC) }
+func logOK(msg string)   { fmt.Printf("%s[✓] %s%s\n", GREEN, msg, RC) }
+func logWarn(msg string) { fmt.Printf("%s[!] %s%s\n", YELLOW, msg, RC) }
 
 // renderMenu draws the interactive selection list
 func renderMenu(existing []Program, idx int, fullRedraw bool) {
