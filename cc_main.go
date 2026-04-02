@@ -53,7 +53,7 @@ var (
 	origCols, origLines int
 	// CLI Flags
 	Flagversion = flag.Bool("v", false, "Display version information")
-	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
+	Flagnoinit  = flag.Bool("t", false, "Skip terminal resizing and environment initialization")
 	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
 	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
@@ -67,26 +67,6 @@ type Program struct {
 
 // ========================= HELPER FUNCTIONS =========================
 
-// clearScreen handles cross-platform terminal clearing
-func clearScreen() {
-	if *Flagnoinit {
-		return
-	}
-	if GOOS == "windows" {
-		// Windows CMD requires an external call to 'cls'
-		cmd := exec.Command("cmd", "/c", "cls")
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-	} else {
-		cmd := exec.Command("sh", "-c", "clear")
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-
-	}
-	// Fallback use ANSI escape sequences
-	fmt.Print("\033[H\033[2J")
-}
-
 // cc_exit provides a clean termination of the application
 func cc_exit() {
 	// Close keyboard
@@ -96,7 +76,7 @@ func cc_exit() {
 	fmt.Print("\033[?25h")
 
 	// Main Screen Buffer
-	if !*Flagnoinit {
+	if !*Flagnoinit && !*Flagauto {
 		fmt.Print("\033[?1049l")
 	}
 
@@ -151,39 +131,6 @@ func terminalresize(w int, h int) {
 
 	// Generic ANSI resize fallback for modern terminals
 	fmt.Printf("\033[8;%d;%dt", h, w)
-}
-
-// initApp prepares the terminal environment (Title, Resize)
-func initApp() {
-	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
-
-	// Alternate Screen Buffer
-	if !*Flagnoinit {
-		fmt.Print("\033[?1049h")
-	}
-
-	// Get current terminal size
-	if GOOS == "windows" {
-		cmd := exec.Command(
-			"powershell", "-NoProfile", "-Command",
-			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
-		)
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
-
-	} else {
-		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
-	}
-
-	// Set Terminal Title via ANSI sequence
-	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
-
-	// Resize terminal
-	terminalresize(COLS, LINES)
 }
 
 // ========================= PROGRAMS =========================
@@ -255,7 +202,7 @@ func getPrograms() []Program {
 				filepath.Join(appData, "Code/User/workspaceStorage"),
 				filepath.Join(appData, "Code/GPUCache"),
 			}, false},
-			{"DirectX Shader Cache", []string{
+			{"Shader Cache", []string{
 				filepath.Join(localAppData, "D3DSCache"),
 				filepath.Join(localAppData, "NVIDIA/GLCache"),
 			}, false},
@@ -352,7 +299,10 @@ func getPrograms() []Program {
 				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/GPUCache"),
 				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/User/workspaceStorage"),
 			}, false},
-			{"Mesa Shader Cache", []string{filepath.Join(home, cache, "mesa_shader_cache")}, false},
+			{"Shader Cache", []string{
+				filepath.Join(home, cache, "mesa_shader_cache"),
+				filepath.Join(home, cache, "nvidia/GLCache"),
+			}, false},
 			{"Go Build Cache", []string{filepath.Join(home, cache, "go-build")}, false},
 			{"Pip Cache", []string{filepath.Join(home, cache, "pip")}, false},
 			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
@@ -444,6 +394,40 @@ func expandHome(path string) string {
 
 // ========================= MENU UI LOGIC =========================
 
+// initApp prepares the terminal environment (Title, Resize)
+func initApp() {
+	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
+
+	// Alternate Screen Buffer
+	fmt.Print("\033[?1049h")
+
+	// Get current terminal size
+	if GOOS == "windows" {
+		cmd := exec.Command(
+			"powershell", "-NoProfile", "-Command",
+			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
+		)
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
+
+	} else {
+		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
+	}
+
+	// Set Terminal Title via ANSI sequence
+	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
+
+	// Resize terminal
+	terminalresize(COLS, LINES)
+
+	// Clear screen
+	fmt.Print("\033[H\033[2J")
+}
+
 func showBanner() {
 	_, total, free := getDiskMetrics()
 	fmt.Printf(`%s  ____________________     .-.
@@ -478,7 +462,6 @@ func logOK(msg string) {
 // renderMenu draws the interactive selection list
 func renderMenu(existing []Program, idx int, fullRedraw bool) {
 	if fullRedraw {
-		clearScreen()
 		showBanner()
 		fmt.Printf("Use ↑/↓ or W/S to navigate | [ENTER] to select | [C] to clean\n")
 		fmt.Printf("Folders found: [%d]\n", len(existing))
@@ -526,9 +509,6 @@ func scanForExisting() []Program {
 
 // handleMenu manages user input for navigation and selection
 func handleMenu() {
-	clearScreen()
-	showBanner()
-
 	// Initial scan of the filesystem to find existing directories
 	stop := make(chan bool)
 	ack := make(chan bool)
@@ -592,8 +572,6 @@ func handleMenu() {
 			}
 			updated = true
 		} else if char == 'c' || char == 'C' {
-			clearScreen()
-			showBanner()
 			runCleanup(existing)
 		} else if key == keyboard.KeyCtrlC {
 			cc_exit()
@@ -612,9 +590,9 @@ func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
 	if *Flagdryrun {
-		fmt.Printf("%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
+		fmt.Printf("\n%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
 	} else {
-		fmt.Printf("You use this tool at your own risk!")
+		fmt.Printf("\nYou use this tool at your own risk!")
 	}
 	// Fetching the current system user
 	usr, err := user.Current()
@@ -629,7 +607,7 @@ func runCleanup(programs []Program) {
 		}
 		fmt.Printf("\nUsername: %s", name)
 	}
-	fmt.Printf("\nPress [CTRL+C] to cancel")
+	//fmt.Printf("\nPress [CTRL+C] to cancel")
 	fmt.Printf("\nCleaning caches started...\n")
 
 	stop := make(chan bool)
@@ -670,7 +648,8 @@ func runCleanup(programs []Program) {
 
 	if count == 0 {
 		fmt.Printf("\nNothing selected")
-		return
+		time.Sleep(3 * time.Second)
+		cc_exit()
 	}
 
 	if *Flagdryrun {
@@ -686,7 +665,7 @@ func runCleanup(programs []Program) {
 	}
 
 	line()
-	fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
+	fmt.Printf("CrunchyCleaner cleaned: %s%.2f MB%s\n", YELLOW, cleaned, RC)
 
 	if !*Flagauto {
 		keyboard.Close()
@@ -734,10 +713,10 @@ func main() {
 
 	if *Flagversion {
 		fmt.Printf("CrunchyCleaner %s\n", CC_VERSION)
-		os.Exit(0)
+		return
 	}
 
-	if !*Flagnoinit {
+	if !*Flagnoinit && !*Flagauto {
 		initApp()
 	}
 
@@ -747,18 +726,13 @@ func main() {
 		fmt.Printf("%sNOTE: Automation active. Scanning and selecting all caches...%s\n", YELLOW, RC)
 		existing := scanForExisting()
 
-		if len(existing) == 0 {
-			fmt.Printf("\nNo caches found. Nothing to do.")
-			os.Exit(0)
-		}
-
 		// Check all found items
 		for i := range existing {
 			existing[i].Checked = true
 		}
 		runCleanup(existing)
-	} else {
-		// Run interactive mode
-		handleMenu()
 	}
+
+	// Run interactive mode
+	handleMenu()
 }
