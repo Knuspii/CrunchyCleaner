@@ -67,6 +67,49 @@ type Program struct {
 
 // ========================= HELPER FUNCTIONS =========================
 
+// initApp prepares the terminal environment (Title, Resize)
+func initApp() {
+	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
+
+	// Get current terminal size
+	if GOOS == "windows" {
+		cmd := exec.Command(
+			"powershell", "-NoProfile", "-Command",
+			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
+		)
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
+
+	} else {
+		cmd := exec.Command("stty size < /dev/tty")
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
+	}
+
+	// Set Terminal Title via ANSI sequence
+	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
+
+	// Resize terminal
+	terminalresize(COLS, LINES)
+
+	// Clear screen
+	if GOOS == "windows" {
+		// Windows CMD requires an external call to 'cls'
+		cmd := exec.Command("cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
+	}
+	// Fallback use ANSI escape sequences
+	fmt.Print("\033[H\033[2J")
+}
+
 // cc_exit provides a clean termination of the application
 func cc_exit() {
 	// Close keyboard
@@ -74,11 +117,6 @@ func cc_exit() {
 
 	// Enable cursor
 	fmt.Print("\033[?25h")
-
-	// Main Screen Buffer
-	if !*Flagnoinit && !*Flagauto {
-		fmt.Print("\033[?1049l")
-	}
 
 	// Restore size
 	if !*Flagnoinit {
@@ -123,8 +161,12 @@ func terminalresize(w int, h int) {
 	// OS-specific Terminal Resizing
 	if GOOS == "windows" {
 		psCmd := fmt.Sprintf(
-			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
-			w, h,
+			`$w=(Get-Host).UI.RawUI; 
+             $newSize=New-Object System.Management.Automation.Host.Size(%d,%d); 
+             $newBuffer=New-Object System.Management.Automation.Host.Size(%d,999); 
+             $w.BufferSize=$newBuffer; 
+             $w.WindowSize=$newSize`,
+			w, h, w,
 		)
 		exec.Command("powershell", "-NoProfile", "-Command", psCmd).Run()
 	}
@@ -393,40 +435,6 @@ func expandHome(path string) string {
 }
 
 // ========================= MENU UI LOGIC =========================
-
-// initApp prepares the terminal environment (Title, Resize)
-func initApp() {
-	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
-
-	// Alternate Screen Buffer
-	fmt.Print("\033[?1049h")
-
-	// Get current terminal size
-	if GOOS == "windows" {
-		cmd := exec.Command(
-			"powershell", "-NoProfile", "-Command",
-			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
-		)
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
-
-	} else {
-		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
-	}
-
-	// Set Terminal Title via ANSI sequence
-	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
-
-	// Resize terminal
-	terminalresize(COLS, LINES)
-
-	// Clear screen
-	fmt.Print("\033[H\033[2J")
-}
 
 func showBanner() {
 	_, total, free := getDiskMetrics()
