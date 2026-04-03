@@ -39,7 +39,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.4"
+	CC_VERSION = "2.5"
 	COLS       = 62
 	LINES      = 32
 	GOOS       = runtime.GOOS
@@ -53,7 +53,7 @@ var (
 	origCols, origLines int
 	// CLI Flags
 	Flagversion = flag.Bool("v", false, "Display version information")
-	Flagnoinit  = flag.Bool("i", false, "Skip terminal resizing and environment initialization")
+	Flagnoinit  = flag.Bool("t", false, "Skip terminal resizing and environment initialization")
 	Flagdryrun  = flag.Bool("d", false, "Simulation mode without deleting files (for testing)")
 	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
@@ -65,20 +65,43 @@ type Program struct {
 	Checked bool     // Selection state in the menu
 }
 
-// --- Helper Functions ---
+// ========================= HELPER FUNCTIONS =========================
 
-// clearScreen handles cross-platform terminal clearing
-func clearScreen() {
-	if *Flagnoinit {
-		return
+// initApp prepares the terminal environment (Title, Resize)
+func initApp() {
+	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
+
+	// Get current terminal size
+	if GOOS == "windows" {
+		cmd := exec.Command(
+			"powershell", "-NoProfile", "-Command",
+			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
+		)
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
+
+	} else {
+		cmd := exec.Command("stty size < /dev/tty")
+
+		out, _ := cmd.Output()
+		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
 	}
+
+	// Set Terminal Title via ANSI sequence
+	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
+
+	// Resize terminal
+	terminalresize(COLS, LINES)
+
+	// Clear screen
 	if GOOS == "windows" {
 		// Windows CMD requires an external call to 'cls'
-		cmd := exec.Command("cmd", "/c", "cls")
+		cmd := exec.Command("cls")
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 	} else {
-		cmd := exec.Command("sh", "-c", "clear")
+		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
 		cmd.Run()
 
@@ -138,8 +161,12 @@ func terminalresize(w int, h int) {
 	// OS-specific Terminal Resizing
 	if GOOS == "windows" {
 		psCmd := fmt.Sprintf(
-			`$w=(Get-Host).UI.RawUI; $s=New-Object System.Management.Automation.Host.Size(%d,%d); $w.WindowSize=$s; $w.BufferSize=$s`,
-			w, h,
+			`$w=(Get-Host).UI.RawUI; 
+             $newSize=New-Object System.Management.Automation.Host.Size(%d,%d); 
+             $newBuffer=New-Object System.Management.Automation.Host.Size(%d,999); 
+             $w.BufferSize=$newBuffer; 
+             $w.WindowSize=$newSize`,
+			w, h, w,
 		)
 		exec.Command("powershell", "-NoProfile", "-Command", psCmd).Run()
 	}
@@ -148,33 +175,7 @@ func terminalresize(w int, h int) {
 	fmt.Printf("\033[8;%d;%dt", h, w)
 }
 
-// initApp prepares the terminal environment (Title, Resize, User Info)
-func initApp() {
-	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
-
-	// Get current terminal size
-	if GOOS == "windows" {
-		cmd := exec.Command(
-			"powershell", "-NoProfile", "-Command",
-			"$s=$Host.UI.RawUI.WindowSize; Write-Output \"$($s.Width) $($s.Height)\"",
-		)
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
-
-	} else {
-		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
-
-		out, _ := cmd.Output()
-		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
-	}
-
-	// Set Terminal Title via ANSI sequence
-	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
-	// Resize terminal
-	terminalresize(COLS, LINES)
-	time.Sleep(1 * time.Second)
-}
+// ========================= PROGRAMS =========================
 
 func getPrograms() []Program {
 	if runtime.GOOS == "windows" {
@@ -190,6 +191,7 @@ func getPrograms() []Program {
 				filepath.Join(winDir, "Panther"),
 				filepath.Join(winDir, "Logs"),
 			}, false},
+			{"Font Cache (Admin)", []string{filepath.Join(winDir, "ServiceProfiles/LocalService/AppData/Local/FontCache")}, false},
 			{"System Temp Folders (Admin)", []string{filepath.Join(winDir, "Temp")}, false},
 			{"Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
 			{"User Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
@@ -233,6 +235,7 @@ func getPrograms() []Program {
 				filepath.Join(appData, "discord/Code Cache"),
 				filepath.Join(appData, "discord/GPUCache"),
 			}, false},
+			{"Telegram Cache", []string{filepath.Join(appData, "Telegram Desktop/tdata/user_data/cache")}, false},
 			{"Spotify Cache", []string{filepath.Join(localAppData, "Spotify/Storage")}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(appData, "Code/Cache"),
@@ -241,7 +244,7 @@ func getPrograms() []Program {
 				filepath.Join(appData, "Code/User/workspaceStorage"),
 				filepath.Join(appData, "Code/GPUCache"),
 			}, false},
-			{"DirectX Shader Cache", []string{
+			{"Shader Cache", []string{
 				filepath.Join(localAppData, "D3DSCache"),
 				filepath.Join(localAppData, "NVIDIA/GLCache"),
 			}, false},
@@ -260,133 +263,127 @@ func getPrograms() []Program {
 	} else {
 		// Linux
 		home, _ := os.UserHomeDir()
+		cache := ".cache/"
+		flatpak := ".var/app/"
 		return []Program{
 			{"System Logs (Root)", []string{"/var/log/*.log"}, false},
 			{"System Temp Folders (Root)", []string{"/tmp"}, false},
-			{"Thumbnail Cache", []string{filepath.Join(home, ".cache/thumbnails")}, false},
+			{"Thumbnail Cache", []string{filepath.Join(home, cache, "thumbnails")}, false},
 			{"Firefox Cache", []string{
-				filepath.Join(home, ".cache/mozilla/firefox/*/cache2"),
-				filepath.Join(home, ".var/app/org.mozilla.firefox/cache/mozilla/firefox/*/cache2"),
+				filepath.Join(home, cache, "mozilla/firefox/*/cache2"),
+				filepath.Join(home, flatpak, "org.mozilla.firefox/cache/mozilla/firefox/*/cache2"),
 			}, false},
 			{"Chromium Cache", []string{
-				filepath.Join(home, ".cache/chromium/*/Cache"),
-				filepath.Join(home, ".cache/chromium/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.google.Chrome/cache/chromium/*/Cache"),
-				filepath.Join(home, ".var/app/com.google.Chrome/cache/chromium/*/CodeCache"),
+				filepath.Join(home, cache, "chromium/*/Cache"),
+				filepath.Join(home, cache, "chromium/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.google.Chrome/cache/chromium/*/Cache"),
+				filepath.Join(home, flatpak, "com.google.Chrome/cache/chromium/*/CodeCache"),
 			}, false},
 			{"Edge Cache", []string{
-				filepath.Join(home, ".cache/microsoft-edge/*/Cache"),
-				filepath.Join(home, ".cache/microsoft-edge/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/Cache"),
-				filepath.Join(home, ".var/app/com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
+				filepath.Join(home, cache, "microsoft-edge/*/Cache"),
+				filepath.Join(home, cache, "microsoft-edge/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.microsoft.Edge/cache/microsoft-edge/*/Cache"),
+				filepath.Join(home, flatpak, "com.microsoft.Edge/cache/microsoft-edge/*/CodeCache"),
 			}, false},
 			{"Brave Cache", []string{
-				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Cache"),
-				filepath.Join(home, ".cache/BraveSoftware/Brave-Browser/*/Code Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Cache"),
-				filepath.Join(home, ".var/app/com.brave.Browser/cache/Brave-Browser/*/Code Cache"),
+				filepath.Join(home, cache, "BraveSoftware/Brave-Browser/*/Cache"),
+				filepath.Join(home, cache, "BraveSoftware/Brave-Browser/*/Code Cache"),
+				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Cache"),
+				filepath.Join(home, flatpak, "com.brave.Browser/cache/Brave-Browser/*/Code Cache"),
 			}, false},
 			{"Opera Cache", []string{
-				filepath.Join(home, ".cache/opera/Cache"),
+				filepath.Join(home, cache, "opera/Cache"),
 				filepath.Join(home, ".config/opera/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/cache/opera/Cache"),
-				filepath.Join(home, ".var/app/com.opera.Opera/config/opera/Cache"),
+				filepath.Join(home, flatpak, "com.opera.Opera/cache/opera/Cache"),
+				filepath.Join(home, flatpak, ".com.opera.Opera/config/opera/Cache"),
 			}, false},
 			{"Thunderbird Cache", []string{
-				filepath.Join(home, ".cache/thunderbird/*/cache2"),
-				filepath.Join(home, ".var/app/org.mozilla.Thunderbird/cache/mozilla/Thunderbird/*/cache2"),
+				filepath.Join(home, cache, "thunderbird/*/cache2"),
+				filepath.Join(home, flatpak, "org.mozilla.Thunderbird/cache/mozilla/Thunderbird/*/cache2"),
 			}, false},
 			{"Steam Cache", []string{
 				filepath.Join(home, ".steam/steam/appcache"),
 				filepath.Join(home, ".local/share/Steam/appcache"),
 				filepath.Join(home, ".local/share/Steam/config/htmlcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/steam/steam/appcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/.local/share/Steam/appcache"),
-				filepath.Join(home, ".var/app/com.valvesoftware.Steam/.local/share/Steam/config/htmlcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/steam/steam/appcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/appcache"),
+				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/config/htmlcache"),
 			}, false},
 			{"Epic Games (Heroic/Lutris) Cache", []string{
 				filepath.Join(home, ".config/heroic/WebCache"),
 				filepath.Join(home, ".local/share/lutris/runtime"),
-				filepath.Join(home, ".var/app/com.heroicgameslauncher.hgl/config/heroic/WebCache"),
-				filepath.Join(home, ".var/app/com.heroicgameslauncher.hgl/.local/share/lutris/runtime"),
+				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/config/heroic/WebCache"),
+				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/.local/share/lutris/runtime"),
 			}, false},
 			{"Discord Cache", []string{
 				filepath.Join(home, ".config/discord/Cache"),
 				filepath.Join(home, ".config/discord/Code Cache"),
 				filepath.Join(home, ".config/discord/GPUCache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/Code Cache"),
-				filepath.Join(home, ".var/app/com.discordapp.Discord/config/discord/GPUCache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Cache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/Code Cache"),
+				filepath.Join(home, flatpak, "com.discordapp.Discord/config/discord/GPUCache"),
+			}, false},
+			{"Telegram Cache", []string{filepath.Join(
+				home, ".local/share/TelegramDesktop/tdata/user_data/cache"),
+				filepath.Join(home, flatpak, "org.telegram.desktop/data/TelegramDesktop/tdata/user_data/cache"),
 			}, false},
 			{"Spotify Cache", []string{
-				filepath.Join(home, ".cache/spotify"),
-				filepath.Join(home, ".var/app/com.spotify.Client/cache/spotify"),
+				filepath.Join(home, cache, "spotify"),
+				filepath.Join(home, flatpak, "com.spotify.Client/cache/spotify"),
 			}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(home, ".config/Code/Cache"),
 				filepath.Join(home, ".config/Code/CachedData"),
 				filepath.Join(home, ".config/Code/GPUCache"),
 				filepath.Join(home, ".config/Code/User/workspaceStorage"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/Cache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/CachedData"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/GPUCache"),
-				filepath.Join(home, ".var/app/com.visualstudio.code/config/Code/User/workspaceStorage"),
+				filepath.Join(home, flatpak, ".com.visualstudio.code/config/Code/Cache"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/CachedData"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/GPUCache"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/User/workspaceStorage"),
 			}, false},
-			{"Mesa Shader Cache", []string{filepath.Join(home, ".cache/mesa_shader_cache")}, false},
-			{"Go Build Cache", []string{filepath.Join(home, ".cache/go-build")}, false},
-			{"Pip Cache", []string{filepath.Join(home, ".cache/pip")}, false},
+			{"Shader Cache", []string{
+				filepath.Join(home, cache, "mesa_shader_cache"),
+				filepath.Join(home, cache, "nvidia/GLCache"),
+			}, false},
+			{"Go Build Cache", []string{filepath.Join(home, cache, "go-build")}, false},
+			{"Pip Cache", []string{filepath.Join(home, cache, "pip")}, false},
 			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
-			{"Yarn Cache", []string{filepath.Join(home, ".cache/yarn")}, false},
+			{"Yarn Cache", []string{filepath.Join(home, cache, "yarn")}, false},
 			{"Cargo Cache", []string{filepath.Join(home, ".cargo/registry/cache")}, false},
 		}
 	}
 }
 
 // getDiskMetrics calculates total and free space for the root/system drive
-func getDiskMetrics() (freeGB float64, totalStr string, freeStr string) {
-	// Default values if something fails
-	totalStr = "N/A"
-	freeStr = "N/A"
+func getDiskMetrics() (freeGB float64, totalStr, freeStr string) {
+	totalStr, freeStr = "N/A", "N/A"
+	const GB = 1024 * 1024 * 1024
 
+	cmd := "sh -c \"df -B1 --output=size,avail / | tail -1\""
 	if GOOS == "windows" {
-		// We use a single PowerShell command to get both values to reduce overhead
-		cmdArgs := []string{
-			"powershell", "-NoProfile", "-Command",
-			"(Get-PSDrive C | Select-Object Used, Free) | ForEach-Object { \"$($_.Used) $($_.Free)\" }",
-		}
-		out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
-
-		if err == nil {
-			parts := strings.Fields(string(out))
-			if len(parts) >= 2 {
-				used, _ := strconv.ParseFloat(parts[0], 64)
-				free, _ := strconv.ParseFloat(parts[1], 64)
-
-				totalGB := (used + free) / 1024 / 1024 / 1024
-				freeGB = free / 1024 / 1024 / 1024
-
-				totalStr = fmt.Sprintf("%.2f GB", totalGB)
-				freeStr = fmt.Sprintf("%.2f GB", freeGB)
-			}
-		}
-	} else {
-		// Standard Unix 'df' command
-		// -B1 ensures output in bytes for better precision before converting to GB
-		out, err := exec.Command("sh", "-c", "df -B1 --output=size,avail / | tail -1").Output()
-
-		if err == nil {
-			parts := strings.Fields(string(out))
-			if len(parts) >= 2 {
-				totalBytes, _ := strconv.ParseFloat(parts[0], 64)
-				freeBytes, _ := strconv.ParseFloat(parts[1], 64)
-
-				freeGB = freeBytes / 1024 / 1024 / 1024
-				totalStr = fmt.Sprintf("%.2f GB", totalBytes/1024/1024/1024)
-				freeStr = fmt.Sprintf("%.2f GB", freeGB)
-			}
-		}
+		cmd = "powershell -NoProfile -Command \"(Get-PSDrive C).Used, (Get-PSDrive C).Free\""
 	}
-	return freeGB, totalStr, freeStr
+
+	out, err := exec.Command("sh", "-c", cmd).Output() // Note: Windows braucht hier exec.Command("powershell", ...)
+	if GOOS == "windows" {
+		out, err = exec.Command("powershell", "-C", cmd).Output()
+	}
+
+	parts := strings.Fields(string(out))
+	if err == nil && len(parts) >= 2 {
+		v1, _ := strconv.ParseFloat(parts[0], 64)
+		v2, _ := strconv.ParseFloat(parts[1], 64)
+
+		if GOOS == "windows" {
+			freeGB = v2 / GB
+			totalStr = fmt.Sprintf("%.2f GB", (v1+v2)/GB)
+		} else {
+			freeGB = v2 / GB
+			totalStr = fmt.Sprintf("%.2f GB", v1/GB)
+		}
+		freeStr = fmt.Sprintf("%.2f GB", freeGB)
+	}
+	return
 }
 
 // formatMB converts bytes to a string representing Megabytes
@@ -422,7 +419,7 @@ func expandHome(path string) string {
 	return path
 }
 
-// --- Menu UI Logic ---
+// ========================= MENU UI LOGIC =========================
 
 func showBanner() {
 	_, total, free := getDiskMetrics()
@@ -443,22 +440,13 @@ func showBanner() {
 	line()
 }
 
-func logInfo(msg string) {
-	fmt.Printf("\r\033[K%s[+] %s%s\n", CYAN, msg, RC)
-}
-
-func logWarn(msg string) {
-	fmt.Printf("\r\033[K\033[33m[!] %s%s\n", msg, RC)
-}
-
-func logOK(msg string) {
-	fmt.Printf("\r\033[K\033[32m[✓] %s%s\n", msg, RC)
-}
+func logInfo(msg string) { fmt.Printf("%s[+] %s%s\n", CYAN, msg, RC) }
+func logOK(msg string)   { fmt.Printf("%s[✓] %s%s\n", GREEN, msg, RC) }
+func logWarn(msg string) { fmt.Printf("%s[!] %s%s\n", YELLOW, msg, RC) }
 
 // renderMenu draws the interactive selection list
 func renderMenu(existing []Program, idx int, fullRedraw bool) {
 	if fullRedraw {
-		clearScreen()
 		showBanner()
 		fmt.Printf("Use ↑/↓ or W/S to navigate | [ENTER] to select | [C] to clean\n")
 		fmt.Printf("Folders found: [%d]\n", len(existing))
@@ -506,9 +494,6 @@ func scanForExisting() []Program {
 
 // handleMenu manages user input for navigation and selection
 func handleMenu() {
-	clearScreen()
-	showBanner()
-
 	// Initial scan of the filesystem to find existing directories
 	stop := make(chan bool)
 	ack := make(chan bool)
@@ -572,8 +557,6 @@ func handleMenu() {
 			}
 			updated = true
 		} else if char == 'c' || char == 'C' {
-			clearScreen()
-			showBanner()
 			runCleanup(existing)
 		} else if key == keyboard.KeyCtrlC {
 			cc_exit()
@@ -592,9 +575,9 @@ func runCleanup(programs []Program) {
 	beforeFree, _, _ := getDiskMetrics()
 
 	if *Flagdryrun {
-		fmt.Printf("%sNOTE: Dry run active, no files will actually be deleted%s", YELLOW, RC)
+		fmt.Printf("\n%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
 	} else {
-		fmt.Printf("You use this tool at your own risk!")
+		fmt.Printf("\nYou use this tool at your own risk!")
 	}
 	// Fetching the current system user
 	usr, err := user.Current()
@@ -609,7 +592,7 @@ func runCleanup(programs []Program) {
 		}
 		fmt.Printf("\nUsername: %s", name)
 	}
-	fmt.Printf("\nPress [CTRL+C] to cancel")
+	//fmt.Printf("\nPress [CTRL+C] to cancel")
 	fmt.Printf("\nCleaning caches started...\n")
 
 	stop := make(chan bool)
@@ -650,7 +633,8 @@ func runCleanup(programs []Program) {
 
 	if count == 0 {
 		fmt.Printf("\nNothing selected")
-		os.Exit(0)
+		time.Sleep(3 * time.Second)
+		cc_exit()
 	}
 
 	if *Flagdryrun {
@@ -666,15 +650,11 @@ func runCleanup(programs []Program) {
 	}
 
 	line()
-	if !*Flagdryrun {
-		fmt.Printf("CrunchyCleaner cleaned: %.2f MB\n", cleaned)
-	} else {
-		fmt.Printf("CrunchyCleaner cleaned: Nothing because of dry run\n")
-	}
+	fmt.Printf("CrunchyCleaner cleaned: %s%.2f MB%s\n", YELLOW, cleaned, RC)
 
 	if !*Flagauto {
-		fmt.Printf("\nPress [ENTER] to exit")
 		keyboard.Close()
+		fmt.Printf("\nPress [ENTER] to exit")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	cc_exit()
@@ -718,31 +698,26 @@ func main() {
 
 	if *Flagversion {
 		fmt.Printf("CrunchyCleaner %s\n", CC_VERSION)
-		os.Exit(0)
+		return
 	}
 
-	if !*Flagnoinit {
+	if !*Flagnoinit && !*Flagauto {
 		initApp()
 	}
 
 	// AUTOMATION LOGIC
 	if *Flagauto {
 		showBanner()
-		fmt.Printf("%sNOTE: Automation active, scanning and selecting all caches...%s\n", YELLOW, RC)
+		fmt.Printf("%sNOTE: Automation active. Scanning and selecting all caches...%s\n", YELLOW, RC)
 		existing := scanForExisting()
-
-		if len(existing) == 0 {
-			fmt.Printf("\nNo caches found, nothing to do")
-			os.Exit(0)
-		}
 
 		// Check all found items
 		for i := range existing {
 			existing[i].Checked = true
 		}
 		runCleanup(existing)
-	} else {
-		// Run interactive mode
-		handleMenu()
 	}
+
+	// Run interactive mode
+	handleMenu()
 }

@@ -20,6 +20,9 @@ profile.cov
 # Dependency directories
 vendor/
 
+# Binary folder
+bin/
+
 # Go workspace file
 go.work
 go.work.sum
