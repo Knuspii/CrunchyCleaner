@@ -39,7 +39,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.5"
+	CC_VERSION = "2.5.1"
 	COLS       = 62
 	LINES      = 32
 	GOOS       = runtime.GOOS
@@ -67,7 +67,7 @@ type Program struct {
 
 // ========================= HELPER FUNCTIONS =========================
 
-// initApp prepares the terminal environment (Title, Resize)
+// initApp prepares the terminal environment (Title, Resize, User Info)
 func initApp() {
 	fmt.Printf("Initializing CrunchyCleaner %s...\n", CC_VERSION)
 
@@ -82,17 +82,11 @@ func initApp() {
 		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
 
 	} else {
-		cmd := exec.Command("stty size < /dev/tty")
+		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
 
 		out, _ := cmd.Output()
 		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
 	}
-
-	// Set Terminal Title via ANSI sequence
-	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
-
-	// Resize terminal
-	terminalresize(COLS, LINES)
 
 	// Clear screen
 	if GOOS == "windows" {
@@ -108,6 +102,12 @@ func initApp() {
 	}
 	// Fallback use ANSI escape sequences
 	fmt.Print("\033[H\033[2J")
+
+	// Set Terminal Title via ANSI sequence
+	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
+	// Resize terminal
+	terminalresize(COLS, LINES)
+	time.Sleep(1 * time.Second)
 }
 
 // cc_exit provides a clean termination of the application
@@ -162,10 +162,10 @@ func terminalresize(w int, h int) {
 	if GOOS == "windows" {
 		psCmd := fmt.Sprintf(
 			`$w=(Get-Host).UI.RawUI; 
-             $newSize=New-Object System.Management.Automation.Host.Size(%d,%d); 
-             $newBuffer=New-Object System.Management.Automation.Host.Size(%d,999); 
-             $w.BufferSize=$newBuffer; 
-             $w.WindowSize=$newSize`,
+				$newSize=New-Object System.Management.Automation.Host.Size(%d,%d); 
+				$newBuffer=New-Object System.Management.Automation.Host.Size(%d,999); 
+				$w.BufferSize=$newBuffer; 
+				$w.WindowSize=$newSize`,
 			w, h, w,
 		)
 		exec.Command("powershell", "-NoProfile", "-Command", psCmd).Run()
