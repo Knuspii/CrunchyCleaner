@@ -44,10 +44,7 @@ Windows (using Powershell as Admin):
 ```
 iwr https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner.exe -OutFile cc.exe; mv -Force cc.exe $env:SystemRoot\System32\crunchycleaner.exe
 ```
-Or using Golang:
-```
-go install github.com/Knuspii/CrunchyCleaner@latest
-```
+
 Download binary:
 [[Download here]](https://github.com/knuspii/crunchycleaner/releases)
 
