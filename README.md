@@ -66,6 +66,8 @@ Download binary:
   -v    Display version information
 ```
 
+If you use a terminal emulator (kitty, konsole) you might wann use the `-t` flag.
+
 ---
 
 > [!WARNING]
