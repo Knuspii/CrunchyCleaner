@@ -26,7 +26,7 @@
 | :--- | :--- |
 | **System** | System Logs, System Temp Folders, Thumbnail Cache, Shader Cache |
 | **Browsers** | Firefox, Google Chrome, Microsoft Edge, Brave, Opera |
-| **Development** | Visual Studio Code, Go Cache, Pip Cache, NPM Cache, Yarn Cache, Cargo Cache |
+| **Development** | Visual Studio Code, Slack, JetBrains IDE, Go, Pip, NPM, Yarn, Cargo, NuGet, Gradle |
 | **Server** | coming soon* |
 | **Gaming** | Steam, Epic Games(Heroic) |
 | **Apps** | Discord, Spotify, Thunderbird, Telegram |
@@ -34,7 +34,7 @@
 **Flatpak is supported** \
 **Snap is not supported**
 
-## 📥 How to Install & Download ![Download](https://img.shields.io/github/downloads/Knuspii/crunchycleaner/total?color=green)
+## 📥 How to Install & Download ![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)
 Paste this into your terminal. \
 Linux (using sudo):
 ```
@@ -91,3 +91,4 @@ CrunchyCleaner is also available on SourceForge \
 ### External Dependencies
 This project uses the following external dependencies:
 - **[github.com/eiannone/keyboard](https://github.com/eiannone/keyboard)** – used for cross-platform keyboard input (MIT License)
+- **[github.com/shirou/gopsutil](https://github.com/shirou/gopsutil)** – used for cross-platform system and hardware metrics (BSD 3-Clause License)
