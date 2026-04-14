@@ -35,17 +35,20 @@
 **Snap is not supported**
 
 ## 📥 How to Install & Download ![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)
-Paste this into your terminal. \
-Linux (using sudo):
+Paste this into your terminal and restart it afterwards. \
+For Linux (using sudo):
 ```
 curl -L https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner -o cc && sudo install -m 755 cc /usr/local/bin/crunchycleaner && rm cc
 ```
-Windows (using Powershell as Admin):
+For Windows (using Powershell as Admin):
 ```
 iwr https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner.exe -OutFile cc.exe; mv -Force cc.exe $env:SystemRoot\System32\crunchycleaner.exe
 ```
-
-Download binary:
+For Go (using go install):
+```
+go install github.com/knuspii/crunchycleaner/v2@latest
+```
+Or download binary:
 [[Download here]](https://github.com/knuspii/crunchycleaner/releases)
 
 ### 🎖️ Featured on
