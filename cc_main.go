@@ -29,24 +29,26 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/eiannone/keyboard"
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.5.1"
-	COLS       = 62
-	LINES      = 32
-	GOOS       = runtime.GOOS
-	YELLOW     = "\033[33m"
-	CYAN       = "\033[36m"
-	GREEN      = "\033[32m"
-	RC         = "\033[0m" // Reset Color
+	CC_VERSION  = "2.6"
+	COLS        = 62
+	LINES       = 32
+	GOOS        = runtime.GOOS
+	CLEARLINE   = "\r\033[K"
+	CLEARSCREEN = "\033[H\033[2J"
+	YELLOW      = "\033[33m"
+	CYAN        = "\033[36m"
+	GREEN       = "\033[32m"
+	RC          = "\033[0m" // Reset Color
 )
 
 var (
@@ -82,7 +84,7 @@ func initApp() {
 		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origCols, &origLines)
 
 	} else {
-		cmd := exec.Command("sh", "-c", "stty size < /dev/tty")
+		cmd := exec.Command("stty size < /dev/tty")
 
 		out, _ := cmd.Output()
 		fmt.Sscanf(strings.TrimSpace(string(out)), "%d %d", &origLines, &origCols)
@@ -101,13 +103,12 @@ func initApp() {
 
 	}
 	// Fallback use ANSI escape sequences
-	fmt.Print("\033[H\033[2J")
+	fmt.Print(CLEARSCREEN)
 
 	// Set Terminal Title via ANSI sequence
 	fmt.Printf("\033]0;CrunchyCleaner %s\007", CC_VERSION)
 	// Resize terminal
 	terminalresize(COLS, LINES)
-	time.Sleep(1 * time.Second)
 }
 
 // cc_exit provides a clean termination of the application
@@ -119,7 +120,7 @@ func cc_exit() {
 	fmt.Print("\033[?25h")
 
 	// Restore size
-	if !*Flagnoinit {
+	if !*Flagnoinit && !*Flagauto {
 		terminalresize(origCols, origLines)
 	}
 
@@ -145,7 +146,7 @@ func spinner(text string, stop chan bool, ack chan bool) {
 		select {
 		case <-stop:
 			// Clear the line and move cursor to start
-			fmt.Print("\r\033[K")
+			fmt.Print(CLEARLINE)
 			// Signal back to main that we are done
 			ack <- true
 			return
@@ -244,6 +245,12 @@ func getPrograms() []Program {
 				filepath.Join(appData, "Code/User/workspaceStorage"),
 				filepath.Join(appData, "Code/GPUCache"),
 			}, false},
+			{"JetBrains IDE Cache", []string{filepath.Join(localAppData, "JetBrains/*/system/caches")}, false},
+			{"Slack Cache", []string{
+				filepath.Join(appData, "Slack/Cache"),
+				filepath.Join(appData, "Slack/Code Cache"),
+				filepath.Join(appData, "Slack/GPUCache"),
+			}, false},
 			{"Shader Cache", []string{
 				filepath.Join(localAppData, "D3DSCache"),
 				filepath.Join(localAppData, "NVIDIA/GLCache"),
@@ -259,6 +266,8 @@ func getPrograms() []Program {
 				filepath.Join(home, ".cargo/registry/cache"),
 				filepath.Join(home, ".cargo/git/db"),
 			}, false},
+			{"NuGet Cache", []string{filepath.Join(home, ".nuget/packages")}, false},
+			{"Gradle Cache", []string{filepath.Join(home, ".gradle/caches")}, false},
 		}
 	} else {
 		// Linux
@@ -295,7 +304,7 @@ func getPrograms() []Program {
 				filepath.Join(home, cache, "opera/Cache"),
 				filepath.Join(home, ".config/opera/Cache"),
 				filepath.Join(home, flatpak, "com.opera.Opera/cache/opera/Cache"),
-				filepath.Join(home, flatpak, ".com.opera.Opera/config/opera/Cache"),
+				filepath.Join(home, flatpak, "com.opera.Opera/config/opera/Cache"),
 			}, false},
 			{"Thunderbird Cache", []string{
 				filepath.Join(home, cache, "thunderbird/*/cache2"),
@@ -336,10 +345,19 @@ func getPrograms() []Program {
 				filepath.Join(home, ".config/Code/CachedData"),
 				filepath.Join(home, ".config/Code/GPUCache"),
 				filepath.Join(home, ".config/Code/User/workspaceStorage"),
-				filepath.Join(home, flatpak, ".com.visualstudio.code/config/Code/Cache"),
+				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/Cache"),
 				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/CachedData"),
 				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/GPUCache"),
 				filepath.Join(home, flatpak, "com.visualstudio.code/config/Code/User/workspaceStorage"),
+			}, false},
+			{"JetBrains IDE Cache", []string{filepath.Join(home, cache, "JetBrains/*/caches")}, false},
+			{"Slack Cache", []string{
+				filepath.Join(home, ".config/Slack/Cache"),
+				filepath.Join(home, ".config/Slack/Code Cache"),
+				filepath.Join(home, ".config/Slack/GPUCache"),
+				filepath.Join(home, flatpak, "com.slack.Slack/config/Slack/Cache"),
+				filepath.Join(home, flatpak, "com.slack.Slack/config/Slack/Code Cache"),
+				filepath.Join(home, flatpak, "com.slack.Slack/config/Slack/GPUCache"),
 			}, false},
 			{"Shader Cache", []string{
 				filepath.Join(home, cache, "mesa_shader_cache"),
@@ -350,39 +368,29 @@ func getPrograms() []Program {
 			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
 			{"Yarn Cache", []string{filepath.Join(home, cache, "yarn")}, false},
 			{"Cargo Cache", []string{filepath.Join(home, ".cargo/registry/cache")}, false},
+			{"NuGet Cache", []string{filepath.Join(home, ".nuget/packages")}, false},
+			{"Gradle Cache", []string{filepath.Join(home, ".gradle/caches")}, false},
 		}
 	}
 }
 
-// getDiskMetrics calculates total and free space for the root/system drive
+// getDiskMetrics uses gopsutil to fetch precise, platform-independent disk data.
 func getDiskMetrics() (freeGB float64, totalStr, freeStr string) {
-	totalStr, freeStr = "N/A", "N/A"
 	const GB = 1024 * 1024 * 1024
 
-	cmd := "sh -c \"df -B1 --output=size,avail / | tail -1\""
-	if GOOS == "windows" {
-		cmd = "powershell -NoProfile -Command \"(Get-PSDrive C).Used, (Get-PSDrive C).Free\""
-	}
-
-	out, err := exec.Command("sh", "-c", cmd).Output() // Note: Windows braucht hier exec.Command("powershell", ...)
-	if GOOS == "windows" {
-		out, err = exec.Command("powershell", "-C", cmd).Output()
-	}
-
-	parts := strings.Fields(string(out))
-	if err == nil && len(parts) >= 2 {
-		v1, _ := strconv.ParseFloat(parts[0], 64)
-		v2, _ := strconv.ParseFloat(parts[1], 64)
-
-		if GOOS == "windows" {
-			freeGB = v2 / GB
-			totalStr = fmt.Sprintf("%.2f GB", (v1+v2)/GB)
-		} else {
-			freeGB = v2 / GB
-			totalStr = fmt.Sprintf("%.2f GB", v1/GB)
+	// On Linux, "/" is the root. On Windows, gopsutil handles the mapping to the system drive.
+	usage, err := disk.Usage("/")
+	if err != nil {
+		// Fallback for specific Windows environments if "/" fails
+		usage, err = disk.Usage("C:")
+		if err != nil {
+			return 0, "N/A", "N/A"
 		}
-		freeStr = fmt.Sprintf("%.2f GB", freeGB)
 	}
+
+	freeGB = float64(usage.Free) / GB
+	totalStr = fmt.Sprintf("%.2f GB", float64(usage.Total)/GB)
+	freeStr = fmt.Sprintf("%.2f GB", freeGB)
 	return
 }
 
@@ -392,17 +400,25 @@ func formatMB(bytes int64) string {
 	return fmt.Sprintf("%.2f MB", mb)
 }
 
-// getDirSize remains the same (calculating in bytes first for precision)
+// getDirSize utilizes WalkDir (introduced in Go 1.16), which is significantly
+// faster than the older filepath.Walk because it avoids unnecessary Lstat calls.
 func getDirSize(path string) int64 {
 	var size int64
+	// Resolve glob patterns (e.g., paths containing '*')
 	matches, _ := filepath.Glob(expandHome(path))
+
 	for _, m := range matches {
-		filepath.Walk(m, func(_ string, info os.FileInfo, err error) error {
+		// WalkDir is the high-performance standard for scanning directories
+		_ = filepath.WalkDir(m, func(_ string, d os.DirEntry, err error) error {
 			if err != nil {
+				// If a folder is restricted (e.g. System Cache), we just skip it
 				return nil
 			}
-			if !info.IsDir() {
-				size += info.Size()
+			if !d.IsDir() {
+				info, err := d.Info()
+				if err == nil {
+					size += info.Size()
+				}
 			}
 			return nil
 		})
@@ -465,7 +481,7 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 			check = "[" + GREEN + "X" + RC + "]"
 		}
 		// Clear the current line and print the menu entry
-		fmt.Printf("\r\033[K%s%s %s\n", cursor, check, existing[i].Name)
+		fmt.Printf("%s%s%s %s\n", CLEARLINE, cursor, check, existing[i].Name)
 	}
 }
 
@@ -497,7 +513,7 @@ func handleMenu() {
 	// Initial scan of the filesystem to find existing directories
 	stop := make(chan bool)
 	ack := make(chan bool)
-	go spinner("Scanning filesystem", stop, ack)
+	go spinner("Starting CrunchyCleaner & Scanning filesystem", stop, ack)
 	time.Sleep(1 * time.Second)
 
 	existing := scanForExisting()
@@ -613,6 +629,7 @@ func runCleanup(programs []Program) {
 
 			for _, m := range matches {
 				if *Flagdryrun {
+					fmt.Printf(CLEARLINE)
 					logInfo("Would clean: " + m)
 					continue
 				}
@@ -625,6 +642,7 @@ func runCleanup(programs []Program) {
 		if idx := strings.Index(name, "("); idx != -1 {
 			name = strings.TrimSpace(name[:idx])
 		}
+		fmt.Printf(CLEARLINE)
 		logOK(name)
 	}
 
@@ -673,6 +691,7 @@ func deletePath(path string) {
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
+		fmt.Printf(CLEARLINE)
 		logWarn("Cannot read " + path + ": " + err.Error())
 		return
 	}
@@ -680,6 +699,7 @@ func deletePath(path string) {
 	for _, e := range entries {
 		full := filepath.Join(path, e.Name())
 		if err := os.RemoveAll(full); err != nil {
+			fmt.Printf(CLEARLINE)
 			logWarn("Skipped " + e.Name() + ": " + err.Error())
 		}
 	}
