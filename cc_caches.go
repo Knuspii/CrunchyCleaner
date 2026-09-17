@@ -136,7 +136,6 @@ func getPrograms() []Program {
 				filepath.Join(appData, "Claude/Code Cache"),
 				filepath.Join(appData, "Claude/GPUCache"),
 			}, false},
-			{"Hatch Cache", []string{filepath.Join(localAppData, "hatch/Cache")}, false},
 			{"User Cache", []string{filepath.Join(home, ".cache")}, false},
 		}
 	} else {
