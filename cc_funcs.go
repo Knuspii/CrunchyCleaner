@@ -34,10 +34,15 @@ func getDiskMetrics() (freeGB float64, totalStr, freeStr string) {
 	return
 }
 
-// formatMB converts bytes to a string representing Megabytes
-func formatMB(bytes int64) string {
-	mb := float64(bytes) / 1024 / 1024
-	return fmt.Sprintf("%.2f MB", mb)
+func formatBytes(bytes int64) string {
+	const (
+		mb = 1024 * 1024
+		gb = 1024 * mb
+	)
+	if bytes >= gb {
+		return fmt.Sprintf("%.2f GB", float64(bytes)/gb)
+	}
+	return fmt.Sprintf("%.2f MB", float64(bytes)/mb)
 }
 
 // getDirSize utilizes WalkDir (introduced in Go 1.16), which is significantly
@@ -45,25 +50,57 @@ func formatMB(bytes int64) string {
 func getDirSize(path string) int64 {
 	var size int64
 	// Resolve glob patterns (e.g., paths containing '*')
-	matches, _ := filepath.Glob(expandHome(path))
+	matches := globMatches(path)
 
 	for _, m := range matches {
-		// WalkDir is the high-performance standard for scanning directories
-		_ = filepath.WalkDir(m, func(_ string, d os.DirEntry, err error) error {
-			if err != nil {
-				// If a folder is restricted (e.g. System Cache), we just skip it
-				return nil
-			}
-			if !d.IsDir() {
-				info, err := d.Info()
-				if err == nil {
-					size += info.Size()
-				}
-			}
-			return nil
-		})
+		size += getPathSize(m)
 	}
 	return size
+}
+
+func getPathSize(path string) int64 {
+	var size int64
+	_ = filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() {
+			if info, err := d.Info(); err == nil {
+				size += info.Size()
+			}
+		}
+		return nil
+	})
+	return size
+}
+
+func globMatches(path string) []string {
+	expanded := expandHome(path)
+	if !filepath.IsAbs(expanded) {
+		return nil
+	}
+	matches, err := filepath.Glob(expanded)
+	if err != nil {
+		return nil
+	}
+	return matches
+}
+
+func getCacheSize(paths []string) (int64, bool) {
+	seen := make(map[string]struct{})
+	var size int64
+	for _, path := range paths {
+		matches := globMatches(path)
+		for _, match := range matches {
+			match = filepath.Clean(match)
+			if _, exists := seen[match]; exists {
+				continue
+			}
+			seen[match] = struct{}{}
+			size += getDirSize(match)
+		}
+	}
+	return size, len(seen) > 0
 }
 
 // expandHome resolves the shorthand '~/ ' to the absolute user home directory
@@ -76,51 +113,75 @@ func expandHome(path string) string {
 }
 
 // function to scan which programs actually exist on the disk
-func scanForExisting() []Program {
-	allPrograms := getPrograms()
-	existing := []Program{}
-	for _, p := range allPrograms {
-		found := false
-		var totalSize int64
-		for _, path := range p.Paths {
-			matches, _ := filepath.Glob(expandHome(path))
-			if len(matches) > 0 {
-				found = true
-				totalSize += getDirSize(path)
-			}
-		}
-		if found {
-			// We format the name here so it's ready for both UI and Logs
-			p.Name = fmt.Sprintf("%-30s %s(%s)%s", p.Name, YELLOW, formatMB(totalSize), RC)
-			existing = append(existing, p)
+func scanForExisting() []CacheEntry {
+	return scanPrograms(getPrograms())
+}
+
+func scanPrograms(programs []Program) []CacheEntry {
+	existing := []CacheEntry{}
+	for _, p := range programs {
+		totalSize, found := getCacheSize(p.Paths)
+		if found && totalSize > 0 {
+			existing = append(existing, CacheEntry{Program: p, Size: totalSize})
 		}
 	}
 	return existing
 }
 
-func deletePath(path string) {
+func selectionSummary(entries []CacheEntry) string {
+	var selected, total int64
+	for _, entry := range entries {
+		total += entry.Size
+		if entry.Checked {
+			selected += entry.Size
+		}
+	}
+	return fmt.Sprintf("%s / %s selected", formatBytes(selected), formatBytes(total))
+}
+
+func toggleAll(entries []CacheEntry) {
+	allChecked := true
+	for _, entry := range entries {
+		if !entry.Checked {
+			allChecked = false
+			break
+		}
+	}
+	for i := range entries {
+		entries[i].Checked = !allChecked
+	}
+}
+
+func deletePath(path string) int64 {
 	info, err := os.Stat(path)
 	if err != nil {
-		return
+		return 0
 	}
 
 	if !info.IsDir() {
-		_ = os.Remove(path)
-		return
+		if err := os.Remove(path); err == nil {
+			return info.Size()
+		}
+		return 0
 	}
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Print(CLEARLINE)
 		logWarn("Cannot read " + path + ": " + err.Error())
-		return
+		return 0
 	}
 
+	var removed int64
 	for _, e := range entries {
 		full := filepath.Join(path, e.Name())
+		size := getPathSize(full)
 		if err := os.RemoveAll(full); err != nil {
 			fmt.Print(CLEARLINE)
 			logWarn("Skipped " + e.Name() + ": " + err.Error())
+			continue
 		}
+		removed += size
 	}
+	return removed
 }

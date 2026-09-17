@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.8"
+	CC_VERSION = "2.9"
 	COLS       = 56
 	LINES      = 32
 	GOOS       = runtime.GOOS
@@ -52,11 +51,20 @@ var (
 	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
 
+var menuHelpLines = [...]string{
+	"↑/↓ or W/S to navigate | ENTER to select | C to clean",
+}
+
 // Program represents a target application and its associated cache directories
 type Program struct {
 	Name    string
 	Paths   []string // List of paths (supports wildcards/globbing)
 	Checked bool     // Selection state in the menu
+}
+
+type CacheEntry struct {
+	Program
+	Size int64
 }
 
 type KeyEvent struct {
@@ -176,11 +184,14 @@ func logOK(msg string)   { fmt.Printf("%s[✓] %s%s\n", GREEN, msg, RC) }
 func logWarn(msg string) { fmt.Printf("%s[!] %s%s\n", YELLOW, msg, RC) }
 
 // renderMenu draws the interactive selection list
-func renderMenu(existing []Program, idx int, fullRedraw bool) {
+func renderMenu(existing []CacheEntry, idx int, fullRedraw bool) {
 	if fullRedraw {
 		showBanner()
-		fmt.Printf("↑/↓ or W/S to navigate | ENTER to select | C to clean\n")
-		fmt.Printf("Folders found: %d\n", len(existing))
+	}
+
+	fmt.Printf("%s%s | Folders found: %d\n", CLEARLINE, selectionSummary(existing), len(existing))
+	for _, helpLine := range menuHelpLines {
+		fmt.Printf("%s%s\n", CLEARLINE, helpLine)
 	}
 
 	// Render each detected program entry
@@ -196,7 +207,7 @@ func renderMenu(existing []Program, idx int, fullRedraw bool) {
 			check = "[" + GREEN + "X" + RC + "]"
 		}
 		// Clear the current line and print the menu entry
-		fmt.Printf("%s%s%s %s\n", CLEARLINE, cursor, check, existing[i].Name)
+		fmt.Printf("%s%s%s %-30s %s(%s)%s\n", CLEARLINE, cursor, check, existing[i].Name, YELLOW, formatBytes(existing[i].Size), RC)
 	}
 }
 
@@ -259,18 +270,7 @@ func handleMenu() {
 			updated = true
 			// Toggle 'Select All' / 'Deselect All' logic when pressing 'A'/'a'
 		} else if char == 'a' || char == 'A' {
-			// First, verify if every single discovered item is already checked
-			allChecked := true
-			for _, p := range existing {
-				if !p.Checked {
-					allChecked = false
-					break
-				}
-			}
-			// If all are checked, uncheck everything. If not, check everything.
-			for i := range existing {
-				existing[i].Checked = !allChecked
-			}
+			toggleAll(existing)
 			updated = true
 			// Trigger the cleanup sequence for all checked items (using 'C'/'c')
 		} else if char == 'c' || char == 'C' {
@@ -281,15 +281,13 @@ func handleMenu() {
 		if updated {
 			// Move terminal cursor back up to the start of the menu using ANSI escape codes.
 			// This prevents screen flickering by avoiding a complete terminal screen clear.
-			fmt.Printf("\033[%dA", len(existing))
+			fmt.Printf("\033[%dA", len(existing)+1+len(menuHelpLines))
 			renderMenu(existing, idx, false)
 		}
 	}
 }
 
-func runCleanup(programs []Program) {
-	beforeFree, _, _ := getDiskMetrics()
-
+func runCleanup(programs []CacheEntry) {
 	if *Flagdryrun {
 		fmt.Printf("\n%sNOTE: Dry run active. No files will actually be deleted.%s", YELLOW, RC)
 	} else {
@@ -317,6 +315,7 @@ func runCleanup(programs []Program) {
 	time.Sleep(3 * time.Second)
 
 	count := 0
+	var cleaned int64
 
 	for _, p := range programs {
 		if !p.Checked {
@@ -325,7 +324,7 @@ func runCleanup(programs []Program) {
 		count++
 
 		for _, path := range p.Paths {
-			matches, _ := filepath.Glob(expandHome(path))
+			matches := globMatches(path)
 
 			for _, m := range matches {
 				if *Flagdryrun {
@@ -333,17 +332,12 @@ func runCleanup(programs []Program) {
 					logInfo("Would clean: " + m)
 					continue
 				}
-				deletePath(m)
+				cleaned += deletePath(m)
 			}
 		}
 
-		// Cut the size part
-		name := p.Name
-		if idx := strings.Index(name, "("); idx != -1 {
-			name = strings.TrimSpace(name[:idx])
-		}
 		fmt.Print(CLEARLINE)
-		logOK(name)
+		logOK(p.Name)
 	}
 
 	stop <- true
@@ -361,17 +355,11 @@ func runCleanup(programs []Program) {
 		logOK("Cleaning finished")
 	}
 
-	afterFree, _, _ := getDiskMetrics()
-	cleaned := (afterFree - beforeFree) * 1024
-	if cleaned < 0 || *Flagdryrun {
-		cleaned = 0
-	}
-
 	line()
 	if *Flagdryrun {
 		fmt.Printf("CrunchyCleaner cleaned: NOTHING (DRY-RUN)\n")
 	} else {
-		fmt.Printf("CrunchyCleaner cleaned: %s%.2f MB%s\n", YELLOW, cleaned, RC)
+		fmt.Printf("CrunchyCleaner cleaned: %s%s%s\n", YELLOW, formatBytes(cleaned), RC)
 	}
 
 	if !*Flagauto {
