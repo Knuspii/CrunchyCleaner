@@ -52,8 +52,7 @@ var (
 )
 
 var menuHelpLines = [...]string{
-	"↑/↓ or W/S: Move | Enter: Select | C: Clean",
-	"A: Select/deselect all",
+	"↑/↓ or W/S to navigate | ENTER to select | C to clean",
 }
 
 // Program represents a target application and its associated cache directories
@@ -190,8 +189,7 @@ func renderMenu(existing []CacheEntry, idx int, fullRedraw bool) {
 		showBanner()
 	}
 
-	fmt.Printf("%s%s\n", CLEARLINE, selectionSummary(existing))
-	fmt.Printf("%sFolders found: %d\n", CLEARLINE, len(existing))
+	fmt.Printf("%s%s | Folders found: %d\n", CLEARLINE, selectionSummary(existing), len(existing))
 	for _, helpLine := range menuHelpLines {
 		fmt.Printf("%s%s\n", CLEARLINE, helpLine)
 	}
@@ -283,7 +281,7 @@ func handleMenu() {
 		if updated {
 			// Move terminal cursor back up to the start of the menu using ANSI escape codes.
 			// This prevents screen flickering by avoiding a complete terminal screen clear.
-			fmt.Printf("\033[%dA", len(existing)+2+len(menuHelpLines))
+			fmt.Printf("\033[%dA", len(existing)+1+len(menuHelpLines))
 			renderMenu(existing, idx, false)
 		}
 	}
