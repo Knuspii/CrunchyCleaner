@@ -36,6 +36,12 @@ jobs:
           css_url: https://cdn.simplecss.org/simple.min.css
           install_pandoc: true
 
+      - name: Copy assets
+        run: |
+          if [ -d assets ]; then
+            cp -r assets public/assets
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
