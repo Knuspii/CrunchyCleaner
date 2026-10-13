@@ -25,6 +25,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Create output directory
+        run: mkdir -p public
+
       - name: README to index.html
         uses: davorg/readme-to-index@v1.0.3
         with:
