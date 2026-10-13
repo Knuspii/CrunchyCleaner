@@ -66,6 +66,11 @@ func getPrograms() []Program {
 				filepath.Join(localAppData, "zen/Profiles/*/jumpListCache"),
 				filepath.Join(appData, "zen/Profiles/*/shader-cache"),
 			}, false},
+			{"Vivaldi Cache", []string{
+				filepath.Join(localAppData, "Vivaldi/User Data/Default/Cache"),
+				filepath.Join(localAppData, "Vivaldi/User Data/*/Cache"),
+				filepath.Join(localAppData, "Vivaldi/User Data/Default/Media Cache"),
+			}, false},
 			{"Thunderbird Cache", []string{
 				filepath.Join(localAppData, "Thunderbird/Profiles/*/cache2"),
 			}, false},
@@ -101,7 +106,7 @@ func getPrograms() []Program {
 				filepath.Join(localAppData, "NVIDIA/PerDriverVersion/DXCache"),
 			}, false},
 			{"Golang Cache", []string{filepath.Join(localAppData, "go-build")}, false},
-			{"Pip Cache", []string{filepath.Join(localAppData, "pip/Cache")}, false},
+			{"Pip Cache", []string{filepath.Join(localAppData, "pip/cache")}, false},
 			{"NPM Cache", []string{filepath.Join(appData, "npm-cache/_cacache")}, false},
 			{"Yarn Cache", []string{
 				filepath.Join(localAppData, "Yarn/Cache"),
@@ -121,6 +126,17 @@ func getPrograms() []Program {
 			{"Playwright Cache", []string{filepath.Join(localAppData, "ms-playwright")}, false},
 			{"Python uv Cache", []string{filepath.Join(localAppData, "uv/cache")}, false},
 			{"Node.js Cache", []string{filepath.Join(localAppData, "node-gyp")}, false},
+			{"Bun Cache", []string{filepath.Join(home, ".bun/install/cache")}, false},
+			{"Windows WebCache", []string{filepath.Join(localAppData, "Microsoft/Windows/WebCache")}, false},
+			{"Android Studio", []string{
+				filepath.Join(localAppData, "Google", "AndroidStudio*", "caches"),
+			}, false},
+			{"Claude Cache", []string{
+				filepath.Join(appData, "Claude/Cache"),
+				filepath.Join(appData, "Claude/Code Cache"),
+				filepath.Join(appData, "Claude/GPUCache"),
+			}, false},
+			{"User Cache", []string{filepath.Join(home, ".cache")}, false},
 		}
 	} else {
 		// Linux
