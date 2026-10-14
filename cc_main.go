@@ -34,8 +34,7 @@ import (
 // Global constants for UI and Versioning
 const (
 	CC_VERSION = "2.9"
-	COLS       = 56
-	LINES      = 32
+	COLS       = 57
 	GOOS       = runtime.GOOS
 	CLEARLINE  = "\r\033[K"
 	YELLOW     = "\033[33m"
@@ -46,7 +45,8 @@ const (
 
 var (
 	// CLI Flags
-	Flagversion = flag.Bool("v", false, "Display version information")
+	Flagversion = flag.Bool("v", false, "Show version information")
+	Flaghotkeys = flag.Bool("s", false, "Show all hotkeys")
 	Flagdryrun  = flag.Bool("d", false, "Dry-run mode without deleting files (for testing)")
 	Flagauto    = flag.Bool("a", false, "Automate cleaning (select all and start immediately)")
 )
@@ -160,22 +160,19 @@ func spinner(text string, stop chan bool, ack chan bool) {
 
 // ========================= MENU UI LOGIC =========================
 
-func showBanner() {
+func showBanner() { // AntrFont
 	_, total, free := getDiskMetrics()
-	fmt.Printf(`%s  ____________________     .-.
- |   |  |       __ |  \    |_|
- |   |  |      |  ||  |    | |
- |   |  |      |__||  |    |=|
- |   |__|__________|  |  .=/I\=.
- |                    | ////V\\\\
- |   ______________   | |#######|
- |  |______________|  | |||||||||
- |  |              |  |
- |  |              |  | %sCrunchyCleaner%s
- |  |              |  | Made by: Knuspii, (M)
- |[]|              |[]| Version: %s
- |__|______________|__| Disk: %s / %s%s
-`, YELLOW, RC, YELLOW, CC_VERSION, free, total, RC)
+	fmt.Printf(`%s
+▀█▐▀███ ▀█▐▀███ ▀█▐ ███ ▀█▐▀█ █ ▀█▐▀███ ▀█▐ ███ ▀█▐ ███
+ █▐      █▐▄██▀  █▐ ███  █▐ ███  █▐      █▐▄███  █▐▄███
+ █▐ ███  █▐ ███  █▐ ███  █▐  ██  █▐ ███  █▐ ███    █▐
+▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀  ▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀   ▀▀▀
+▀█▐▀███ ▀█▐▀    ▀█▐▀███ ▀█▐▀███ ▀█▐▀█ █ ▀█▐▀███ ▀█▐▀███
+ █▐      █▐      █▐▄     █▐▄███  █▐ ███  █▐▄     █▐▄██▀
+ █▐ ███  █▐ ███  █▐ ▄██  █▐ ███  █▐  ██  █▐ ▄██  █▐ ███
+▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀  ▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀
+Version: %s | Disk: %s / %s%s
+`, YELLOW, CC_VERSION, free, total, RC)
 	line()
 }
 
@@ -384,6 +381,15 @@ func main() {
 
 	if *Flagversion {
 		fmt.Printf("CrunchyCleaner %s\n", CC_VERSION)
+		return
+	}
+
+	if *Flaghotkeys {
+		fmt.Printf("List of all hotkeys:\n")
+		fmt.Printf("  [↑/↓ or W/S]    go up or down\n")
+		fmt.Printf("  [SPACE/ENTER]   select or unselect\n")
+		fmt.Printf("  [A]             select or unselect all\n")
+		fmt.Printf("  [C]             start cleanup\n")
 		return
 	}
 

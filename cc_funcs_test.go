@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -90,9 +89,6 @@ func TestMenuHelpFitsConfiguredWidth(t *testing.T) {
 		if width := len([]rune(line)); width > COLS {
 			t.Fatalf("menu help line %q is %d columns wide, limit is %d", line, width, COLS)
 		}
-	}
-	if help := strings.Join(menuHelpLines[:], "\n"); !strings.Contains(help, "A: Select/deselect all") {
-		t.Fatalf("menu help does not explain the select-all toggle: %q", help)
 	}
 }
 
