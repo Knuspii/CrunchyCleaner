@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/term"
 	"github.com/eiannone/keyboard"
+	"golang.org/x/term"
 )
 
 // Global constants for UI and Versioning
@@ -223,10 +223,11 @@ func renderMenu(existing []CacheEntry, idx int, offset *int, fullRedraw bool) in
 	}
 
 	// Status line (selection summary) and help text
-	fmt.Printf("%s%s | Folders found: %d\n", CLEARLINE, selectionSummary(existing), len(existing))
 	for _, helpLine := range menuHelpLines {
 		fmt.Printf("%s%s\n", CLEARLINE, helpLine)
 	}
+
+	fmt.Printf("%s%s | Folders found: %d\n", CLEARLINE, selectionSummary(existing), len(existing))
 
 	// Render only the entries inside the visible window
 	for i := *offset; i < *offset+rows && i < len(existing); i++ {
