@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/term"
 	"github.com/eiannone/keyboard"
 )
 
@@ -180,19 +181,55 @@ func logInfo(msg string) { fmt.Printf("%s[+] %s%s\n", CYAN, msg, RC) }
 func logOK(msg string)   { fmt.Printf("%s[✓] %s%s\n", GREEN, msg, RC) }
 func logWarn(msg string) { fmt.Printf("%s[!] %s%s\n", YELLOW, msg, RC) }
 
-// renderMenu draws the interactive selection list
-func renderMenu(existing []CacheEntry, idx int, fullRedraw bool) {
+// visibleRows calculates how many list entries fit into the current terminal.
+// If the terminal size can't be detected, the whole list is shown (old behavior).
+func visibleRows(total int) int {
+	_, h, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || h <= 0 {
+		return total
+	}
+
+	// Reserved lines: banner + status line + help line(s) + scroll indicator + 1 spare line
+	// (the spare line is needed so the cursor never pushes the screen up)
+	rows := h - len(menuHelpLines) - 1 - 1 - 1
+	if rows < 3 {
+		rows = 3 // Always show at least 3 entries
+	}
+	if rows > total {
+		rows = total // List fits completely, no scrolling needed
+	}
+	return rows
+}
+
+// renderMenu draws the interactive selection list and returns the number of lines printed
+func renderMenu(existing []CacheEntry, idx int, offset *int, fullRedraw bool) int {
+	// Only draw the banner on the first (full) redraw
 	if fullRedraw {
 		showBanner()
 	}
 
+	// Number of entries that fit into the terminal at once
+	rows := visibleRows(len(existing))
+
+	// Keep the selected entry inside the visible window
+	if idx < *offset {
+		*offset = idx // Selection moved above the window -> scroll up
+	}
+	if idx >= *offset+rows {
+		*offset = idx - rows + 1 // Selection moved below the window -> scroll down
+	}
+	if *offset < 0 {
+		*offset = 0 // Safety: never scroll above the first entry
+	}
+
+	// Status line (selection summary) and help text
 	fmt.Printf("%s%s | Folders found: %d\n", CLEARLINE, selectionSummary(existing), len(existing))
 	for _, helpLine := range menuHelpLines {
 		fmt.Printf("%s%s\n", CLEARLINE, helpLine)
 	}
 
-	// Render each detected program entry
-	for i := range existing {
+	// Render only the entries inside the visible window
+	for i := *offset; i < *offset+rows && i < len(existing); i++ {
 		cursor := "   "
 		// Highlight the currently selected entry
 		if i == idx {
@@ -206,6 +243,19 @@ func renderMenu(existing []CacheEntry, idx int, fullRedraw bool) {
 		// Clear the current line and print the menu entry
 		fmt.Printf("%s%s%s %-30s %s(%s)%s\n", CLEARLINE, cursor, check, existing[i].Name, YELLOW, formatBytes(existing[i].Size), RC)
 	}
+
+	// Scroll indicator (always one line, so the line count stays constant)
+	if len(existing) > rows {
+		// List is longer than the window: show which entries are visible
+		fmt.Printf("%s%s↕ %d-%d / %d%s\n", CLEARLINE, CYAN, *offset+1, *offset+rows, len(existing), RC)
+	} else {
+		// List fits completely: print an empty line as placeholder
+		fmt.Printf("%s\n", CLEARLINE)
+	}
+
+	// Total lines printed: status line + help lines + visible entries + scroll indicator
+	// (the caller uses this to move the cursor back up for the next redraw)
+	return len(menuHelpLines) + 1 + rows + 1
 }
 
 // handleMenu manages user input for navigation and selection
@@ -226,8 +276,9 @@ func handleMenu() {
 	<-ack
 
 	idx := 0
+	offset := 0
 	// Perform the initial, full redraw of the menu screen
-	renderMenu(existing, idx, true)
+	lines := renderMenu(existing, idx, &offset, true)
 
 	// If no matching cache directories are found on the machine, display a warning and exit
 	if len(existing) <= 0 {
@@ -276,10 +327,8 @@ func handleMenu() {
 
 		// Redraw the menu dynamically if the UI state changed
 		if updated {
-			// Move terminal cursor back up to the start of the menu using ANSI escape codes.
-			// This prevents screen flickering by avoiding a complete terminal screen clear.
-			fmt.Printf("\033[%dA", len(existing)+1+len(menuHelpLines))
-			renderMenu(existing, idx, false)
+			fmt.Printf("\033[%dA", lines)
+			lines = renderMenu(existing, idx, &offset, false)
 		}
 	}
 }
