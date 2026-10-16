@@ -61,9 +61,10 @@ After that you can just type `crunchycleaner -v` into your terminal to verify it
 
 ## Options:
 ```
-  -a    Automate cleaning (select all and start immediately)
-  -d    Dry-run mode without deleting files (for testing)
-  -v    Display version information
+  -a	Automate cleaning (select all and start immediately)
+  -d	Dry-run mode without deleting files (for testing)
+  -s	Show all hotkeys
+  -v	Show version information
 ```
 
 ---
@@ -100,4 +101,5 @@ CrunchyCleaner is also available on SourceForge \
 ### External Dependencies
 This project uses the following external dependencies:
 - **[github.com/eiannone/keyboard](https://github.com/eiannone/keyboard)** – used for cross-platform keyboard input (MIT License)
-- **[github.com/shirou/gopsutil](https://github.com/shirou/gopsutil)** – used for cross-platform system and hardware metrics (BSD 3-Clause License)
+- **[golang.org/x/term](https://pkg.go.dev/golang.org/x/term)** – used for the menu list (BSD 3-Clause License)
+- **[github.com/shirou/gopsuti](https://github.com/shirou/gopsutil)** – used for cross-platform system and hardware metrics (BSD 3-Clause License)
