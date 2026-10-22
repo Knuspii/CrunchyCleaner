@@ -172,7 +172,7 @@ func showBanner() { // AntrFont
  █▐      █▐      █▐▄     █▐▄███  █▐ ███  █▐▄     █▐▄██▀
  █▐ ███  █▐ ███  █▐ ▄██  █▐ ███  █▐  ██  █▐ ▄██  █▐ ███
 ▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀  ▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀
-Version: %s | Disk: %s / %s%s
+Version: %s | Free-Space: %s / %s%s
 `, YELLOW, CC_VERSION, free, total, RC)
 	line()
 }
