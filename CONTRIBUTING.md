@@ -23,7 +23,8 @@ If you find a bug or have an idea:
 
 ## 📥 Pull Request Process
 * Fork the repository and create your branch from main.
-* Test your changes! Run a dry-run (-d) to ensure paths are detected correctly.
+* Test your changes use ```go test .```
+* Run a dry-run ```go run . -d``` to ensure paths are detected correctly.
 * Commit with descriptive messages (e.g., "Add: Spotify cache support").
 * Open a PR and describe what your changes do and why they are necessary.
 
