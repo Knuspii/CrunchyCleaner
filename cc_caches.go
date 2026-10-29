@@ -128,7 +128,7 @@ func getPrograms() []Program {
 			{"Node.js Cache", []string{filepath.Join(localAppData, "node-gyp")}, false},
 			{"Bun Cache", []string{filepath.Join(home, ".bun/install/cache")}, false},
 			{"Windows WebCache", []string{filepath.Join(localAppData, "Microsoft/Windows/WebCache")}, false},
-			{"Android Studio", []string{
+			{"Android Studio Cache", []string{
 				filepath.Join(localAppData, "Google", "AndroidStudio*", "caches"),
 			}, false},
 			{"Claude Cache", []string{
