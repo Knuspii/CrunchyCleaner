@@ -164,15 +164,12 @@ func spinner(text string, stop chan bool, ack chan bool) {
 func showBanner() { // AntrFont
 	_, total, free := getDiskMetrics()
 	fmt.Printf(`%s
-▀█▐▀███ ▀█▐▀███ ▀█▐ ███ ▀█▐▀█ █ ▀█▐▀███ ▀█▐ ███ ▀█▐ ███
- █▐      █▐▄██▀  █▐ ███  █▐ ███  █▐      █▐▄███  █▐▄███
- █▐ ███  █▐ ███  █▐ ███  █▐  ██  █▐ ███  █▐ ███    █▐
-▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀  ▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀   ▀▀▀
-▀█▐▀███ ▀█▐▀    ▀█▐▀███ ▀█▐▀███ ▀█▐▀█ █ ▀█▐▀███ ▀█▐▀███
- █▐      █▐      █▐▄     █▐▄███  █▐ ███  █▐▄     █▐▄██▀
- █▐ ███  █▐ ███  █▐ ▄██  █▐ ███  █▐  ██  █▐ ▄██  █▐ ███
-▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀ ▀▀▀  ▀▀ ▀▀▀▀▀▀▀ ▀▀▀ ▀▀▀
-Version: %s | Free-Space: %s / %s%s
+▀▀▀▀ ▓▀▀▄ █  █ ▀▀▀▄ ▀▀▀▀ ▓  ▓ ▓  ▓
+▒    ▒ ▀▄ ▒  ▒ ▒  ▒ ▒    ▒▀▀▒  ▀▀▒
+ ▀▀▀ ▀  ▀  ▀▀  ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ 
+▀▀▀▀ ▓    ▓▀▀ ▓▀▀▓ ▀▀▀▄ ▓▀▀ ▓▀▀▄
+▒    ▒    ▒▀  ▒▀▀▒ ▒  ▒ ▒▀  ▒ ▀▄ Version: %s
+ ▀▀▀  ▀▀▀ ▀▀▀ ▀  ▀ ▀  ▀ ▀▀▀ ▀  ▀ %s / %s%s
 `, YELLOW, CC_VERSION, free, total, RC)
 	line()
 }
@@ -436,10 +433,10 @@ func main() {
 
 	if *Flaghotkeys {
 		fmt.Printf("List of all hotkeys:\n")
-		fmt.Printf("  [↑/↓ or W/S]    go up or down\n")
-		fmt.Printf("  [SPACE/ENTER]   select or unselect\n")
-		fmt.Printf("  [A]             select or unselect all\n")
-		fmt.Printf("  [C]             start cleanup\n")
+		fmt.Printf("  [↑/↓ or W/S]    Go up or down\n")
+		fmt.Printf("  [SPACE/ENTER]   Select or unselect\n")
+		fmt.Printf("  [A]             Select or unselect all\n")
+		fmt.Printf("  [C]             Start cleanup\n")
 		return
 	}
 
