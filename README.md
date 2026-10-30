@@ -26,7 +26,7 @@
 
 ---
 
-### Supported Software List:
+## Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
 | **System:** | System Logs, System Temp, Thumbnail, Shell History, Package Managers, Shader Cache |
@@ -39,23 +39,35 @@
 
 ---
 
-## 📥 How to Install & Download ![Download](https://img.shields.io/github/downloads/knuspii/crunchycleaner/total?color=green)
-**Download the latest binary and just run/open it: [[Download here]](https://github.com/knuspii/crunchycleaner/releases)** \
-Or paste the corresponding command into your terminal and restart it afterwards to fully install it. \
-\
-For Linux (using sudo):
-```
+## 📥 How to Install & Download
+### Easiest way:
+[Simply download the latest release from here ⬇ and run the binary.](https://github.com/Knuspii/CrunchyCleaner/releases/latest) \
+[![DownloadCrunchyCleaner](https://img.shields.io/badge/⬇%20Download%20CrunchyCleaner-Latest%20Release-brightgreen?style=for-the-badge)](https://github.com/Knuspii/CrunchyCleaner/releases/latest)
+
+
+### Alternative: Install via Terminal
+If you prefer installing CrunchyCleaner through your terminal, use one
+of the following commands.
+
+**Linux (using sudo):**
+``` bash
 curl -L https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner -o cc && sudo install -m 755 cc /usr/local/bin/crunchycleaner && rm cc
 ```
-For Windows (using Powershell as Admin):
-```
+
+**Windows (using PowerShell as Administrator):**
+``` powershell
 $d="$env:ProgramFiles\CrunchyCleaner"; md $d -F; iwr "https://github.com/Knuspii/CrunchyCleaner/releases/latest/download/crunchycleaner.exe" -OutFile "$d\crunchycleaner.exe"; $p=[Environment]::GetEnvironmentVariable('Path',2); if($p -notlike "$d"){[Environment]::SetEnvironmentVariable('Path',"$p;$d",2)}
 ```
-For Go (using go install):
-```
+
+**Go (using `go install`):**
+``` bash
 go install github.com/knuspii/crunchycleaner/v2@latest
 ```
-After that you can just type `crunchycleaner -v` into your terminal to verify it's installed.
+
+After installation, restart your terminal and verify it by running:
+``` bash
+crunchycleaner -v
+```
 
 ---
 
@@ -94,9 +106,10 @@ CrunchyCleaner is also available on SourceForge \
 ---
 
 ### 🎖️ Featured on
-[![Awesome TUIs](https://img.shields.io/badge/Awesome-TUIs-orange?style=flat-square)](https://github.com/rothgar/awesome-tuis)
-[![Awesome Go](https://img.shields.io/badge/Awesome-Go-blue?style=flat-square)](https://github.com/avelino/awesome-go)
-[![Awesome Windows](https://img.shields.io/badge/Awesome-Windows-blueviiet?style=flat-square)](https://github.com/0PandaDEV/awesome-windows)
+ - [Awesome TUIs](https://github.com/rothgar/awesome-tuis)
+ - [Awesome Go](https://github.com/avelino/awesome-go)
+ - [Awesome Windows](https://github.com/0PandaDEV/awesome-windows)
+ - [Linux Links](https://www.linuxlinks.com/crunchycleaner-lightweight-cache-cleanup-tool)
 
 ### External Dependencies
 This project uses the following external dependencies:
