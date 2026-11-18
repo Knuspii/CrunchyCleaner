@@ -34,7 +34,7 @@ import (
 
 // Global constants for UI and Versioning
 const (
-	CC_VERSION = "2.9"
+	CC_VERSION = "2.10"
 	COLS       = 57
 	GOOS       = runtime.GOOS
 	CLEARLINE  = "\r\033[K"

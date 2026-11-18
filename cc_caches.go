@@ -29,6 +29,7 @@ func getPrograms() []Program {
 			{"Font Cache (Admin)", []string{filepath.Join(winDir, "ServiceProfiles/LocalService/AppData/Local/FontCache")}, false},
 			{"System Temp Folders (Admin)", []string{filepath.Join(winDir, "Temp")}, false},
 			{"Update Logs (Admin)", []string{filepath.Join(winDir, "SoftwareDistribution/Download")}, false},
+			{"Windows Error Reports (Admin)", []string{filepath.Join(programData, "Microsoft/Windows/WER")}, false},
 			{"User Temp Folder", []string{filepath.Join(localAppData, "Temp")}, false},
 			{"Thumbnail Cache", []string{filepath.Join(localAppData, "Microsoft/Windows/Explorer")}, false},
 			{"Powershell History", []string{filepath.Join(appData, "Microsoft/Windows/PowerShell/PSReadLine")}, false},
@@ -86,6 +87,11 @@ func getPrograms() []Program {
 				filepath.Join(appData, "discord/GPUCache"),
 			}, false},
 			{"Telegram Cache", []string{filepath.Join(appData, "Telegram Desktop/tdata/user_data/cache")}, false},
+			{"Signal Cache", []string{
+				filepath.Join(appData, "Signal/Cache"),
+				filepath.Join(appData, "Signal/Code Cache"),
+				filepath.Join(appData, "Signal/GPUCache"),
+			}, false},
 			{"Spotify Cache", []string{filepath.Join(localAppData, "Spotify/Storage")}, false},
 			{"VS Code Cache", []string{
 				filepath.Join(appData, "Code/Cache"),
@@ -108,6 +114,7 @@ func getPrograms() []Program {
 			{"Golang Cache", []string{filepath.Join(localAppData, "go-build")}, false},
 			{"Pip Cache", []string{filepath.Join(localAppData, "pip/cache")}, false},
 			{"NPM Cache", []string{filepath.Join(appData, "npm-cache/_cacache")}, false},
+			{"pnpm Cache", []string{filepath.Join(localAppData, "pnpm-cache")}, false},
 			{"Yarn Cache", []string{
 				filepath.Join(localAppData, "Yarn/Cache"),
 				filepath.Join(appData, "Yarn/Cache"),
@@ -121,7 +128,6 @@ func getPrograms() []Program {
 				filepath.Join(localAppData, "electron/Code Cache"),
 				filepath.Join(localAppData, "electron/GPUCache"),
 			}, false},
-			{"NuGet Cache", []string{filepath.Join(home, ".nuget/packages")}, false},
 			{"Gradle Cache", []string{filepath.Join(home, ".gradle/caches")}, false},
 			{"Playwright Cache", []string{filepath.Join(localAppData, "ms-playwright")}, false},
 			{"Python uv Cache", []string{filepath.Join(localAppData, "uv/cache")}, false},
@@ -136,6 +142,7 @@ func getPrograms() []Program {
 				filepath.Join(appData, "Claude/Code Cache"),
 				filepath.Join(appData, "Claude/GPUCache"),
 			}, false},
+			{"Composer Cache", []string{filepath.Join(localAppData, "Composer/cache")}, false},
 			{"User Cache", []string{filepath.Join(home, ".cache")}, false},
 		}
 	} else {
@@ -155,8 +162,14 @@ func getPrograms() []Program {
 				"/var/cache/snapd/*",
 				"/var/cache/apk/*",
 			}, false},
+			{"Coredumps (Root)", []string{"/var/lib/systemd/coredump/*"}, false},
 			{"Thumbnail Cache", []string{filepath.Join(home, cache, "thumbnails")}, false},
-			{"Shell History", []string{filepath.Join(home, "*_history")}, false},
+			{"Shell History", []string{
+				filepath.Join(home, "*_history"),
+				filepath.Join(home, ".zhistory"),
+				filepath.Join(home, ".local/share/fish/fish_history"),
+				filepath.Join(home, ".local/state/zsh/history"),
+			}, false},
 			{"Firefox Cache", []string{
 				filepath.Join(home, cache, "mozilla/firefox/*/cache2"),
 				filepath.Join(home, flatpak, "org.mozilla.firefox/cache/mozilla/firefox/*/cache2"),
@@ -201,11 +214,9 @@ func getPrograms() []Program {
 				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/appcache"),
 				filepath.Join(home, flatpak, "com.valvesoftware.Steam/.local/share/Steam/config/htmlcache"),
 			}, false},
-			{"Epic Games (Heroic/Lutris) Cache", []string{
+			{"Epic Games (Heroic) Cache", []string{
 				filepath.Join(home, ".config/heroic/WebCache"),
-				filepath.Join(home, ".local/share/lutris/runtime"),
 				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/config/heroic/WebCache"),
-				filepath.Join(home, flatpak, "com.heroicgameslauncher.hgl/.local/share/lutris/runtime"),
 			}, false},
 			{"Discord Cache", []string{
 				filepath.Join(home, ".config/discord/Cache"),
@@ -218,6 +229,14 @@ func getPrograms() []Program {
 			{"Telegram Cache", []string{filepath.Join(
 				home, ".local/share/TelegramDesktop/tdata/user_data/cache"),
 				filepath.Join(home, flatpak, "org.telegram.desktop/data/TelegramDesktop/tdata/user_data/cache"),
+			}, false},
+			{"Signal Cache", []string{
+				filepath.Join(home, ".config/Signal/Cache"),
+				filepath.Join(home, ".config/Signal/Code Cache"),
+				filepath.Join(home, ".config/Signal/GPUCache"),
+				filepath.Join(home, flatpak, "org.signal.Signal/config/Signal/Cache"),
+				filepath.Join(home, flatpak, "org.signal.Signal/config/Signal/Code Cache"),
+				filepath.Join(home, flatpak, "org.signal.Signal/config/Signal/GPUCache"),
 			}, false},
 			{"Spotify Cache", []string{
 				filepath.Join(home, cache, "spotify"),
@@ -253,14 +272,15 @@ func getPrograms() []Program {
 			{"Golang Cache", []string{filepath.Join(home, cache, "go-build")}, false},
 			{"Pip Cache", []string{filepath.Join(home, cache, "pip")}, false},
 			{"NPM Cache", []string{filepath.Join(home, ".npm/_cacache")}, false},
+			{"pnpm Cache", []string{filepath.Join(home, cache, "pnpm")}, false},
 			{"Yarn Cache", []string{filepath.Join(home, cache, "yarn")}, false},
 			{"Cargo Cache", []string{filepath.Join(home, ".cargo/registry/cache")}, false},
 			{"Electron Cache", []string{filepath.Join(home, cache, "electron")}, false},
-			{"NuGet Cache", []string{filepath.Join(home, ".nuget/packages")}, false},
 			{"Gradle Cache", []string{filepath.Join(home, ".gradle/caches")}, false},
 			{"Playwright Cache", []string{filepath.Join(home, cache, "ms-playwright")}, false},
 			{"Python uv Cache", []string{filepath.Join(home, cache, "uv")}, false},
 			{"Node.js Cache", []string{filepath.Join(home, cache, "node-gyp")}, false},
+			{"Composer Cache", []string{filepath.Join(home, cache, "composer")}, false},
 		}
 	}
 }

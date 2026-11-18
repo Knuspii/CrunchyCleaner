@@ -29,10 +29,10 @@
 ## Supported Software List:
 | Category | Software / Path |
 | :--- | :--- |
-| **System:** | System Logs, System Temp, Thumbnail, Shell History, Package Managers, Shader Cache |
-| **Browsers:** | Firefox, Google Chrome, Microsoft Edge, Brave, Opera, Zen |
-| **Apps:** | Steam, Epic Games(Heroic), Discord, Telegram, Spotify |
-| **Development:** | Visual Studio Code, JetBrains IDE, Slack, Go, Pip, NPM, Yarn, Cargo, Electron, NuGet, Gradle, Playwright, Python uv, Node.js |
+| **System:** | System Logs, System Temp, Thumbnails, Shell History, Package Managers, Shader Cache and more... |
+| **Browsers:** | Firefox, Google Chrome, Microsoft Edge, Brave, Opera, Zen and more... |
+| **Apps:** | Steam, Epic Games(Heroic), Discord, Telegram, Signal, Spotify and more... |
+| **Development:** | Visual Studio Code, JetBrains IDE, Slack, Go, Pip, NPM, Yarn, Cargo, Electron, Gradle, Python uv, Node.js and more... |
 
 **Flatpak is supported** \
 **Snap is NOT supported**
@@ -106,10 +106,11 @@ CrunchyCleaner is also available on SourceForge \
 ---
 
 ### 🎖️ Featured on
+ - [DigitalEscapeTools](https://digitalescapetools.com/tools/crunchycleaner.html)
+ - [Linux Links](https://www.linuxlinks.com/crunchycleaner-lightweight-cache-cleanup-tool)
  - [Awesome TUIs](https://github.com/rothgar/awesome-tuis)
  - [Awesome Go](https://github.com/avelino/awesome-go)
  - [Awesome Windows](https://github.com/0PandaDEV/awesome-windows)
- - [Linux Links](https://www.linuxlinks.com/crunchycleaner-lightweight-cache-cleanup-tool)
 
 ### External Dependencies
 This project uses the following external dependencies:
