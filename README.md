@@ -106,10 +106,11 @@ CrunchyCleaner is also available on SourceForge \
 ---
 
 ### 🎖️ Featured on
+ - [DigitalEscapeTools](https://digitalescapetools.com/tools/crunchycleaner.html)
+ - [Linux Links](https://www.linuxlinks.com/crunchycleaner-lightweight-cache-cleanup-tool)
  - [Awesome TUIs](https://github.com/rothgar/awesome-tuis)
  - [Awesome Go](https://github.com/avelino/awesome-go)
  - [Awesome Windows](https://github.com/0PandaDEV/awesome-windows)
- - [Linux Links](https://www.linuxlinks.com/crunchycleaner-lightweight-cache-cleanup-tool)
 
 ### External Dependencies
 This project uses the following external dependencies:
