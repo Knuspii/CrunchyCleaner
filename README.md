@@ -18,6 +18,8 @@
 <img src="assets/crunchycleaner-demo.gif" width="1000" height="1000" alt="Preview">
 </div>
 
+[![Watch a one-minute video tour of crunchycleaner](https://gitdiagram.com/video-badge.svg)](https://gitdiagram.com/knuspii/crunchycleaner/video)
+
 ### 🧹 A lightweight, software [cache](https://wikipedia.org/wiki/Cache_(computing)) cleanup tool for Windows & Linux.
 > Made by: Knuspii, (M)
 - **Cross-Platform:** Works on both **Windows** and **Linux**
